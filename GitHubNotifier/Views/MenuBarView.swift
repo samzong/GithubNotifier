@@ -115,6 +115,9 @@ struct MenuBarView: View {
 
     @ViewBuilder
     private func notificationListItem(for notification: GitHubNotification) -> some View {
+        let prState = notificationService.getPRState(for: notification)
+        let issueState = notificationService.getIssueState(for: notification)
+        
         Button(action: {
             closeMenuBarWindow()
             openNotification(notification)
@@ -147,19 +150,8 @@ struct MenuBarView: View {
 
                 Spacer(minLength: 8)
 
-                // Icon on the right
-                if let assetName = notification.notificationType.iconAssetName,
-                   let image = templateIcon(named: assetName, size: 16) {
-                    Image(nsImage: image)
-                        .renderingMode(.template)
-                        .foregroundStyle(iconColor(for: notification))
-                        .frame(width: 16, height: 16)
-                } else {
-                    Image(systemName: notification.notificationType.icon)
-                        .font(.system(size: 14))
-                        .foregroundStyle(iconColor(for: notification))
-                        .frame(width: 16, height: 16)
-                }
+                // Icon on the right - use state-specific icon and color
+                notificationIcon(for: notification, prState: prState, issueState: issueState)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -168,16 +160,72 @@ struct MenuBarView: View {
         .buttonStyle(.plain)
     }
     
-    private func iconColor(for notification: GitHubNotification) -> Color {
+    @ViewBuilder
+    private func notificationIcon(for notification: GitHubNotification, prState: PRState?, issueState: IssueState?) -> some View {
         switch notification.notificationType {
-        case .issue:
-            return Color.green
         case .pullRequest:
-            return Color.purple
+            if let state = prState {
+                if let image = templateIcon(named: state.iconAssetName, size: 16) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundStyle(state.color)
+                        .frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: state.icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(state.color)
+                        .frame(width: 16, height: 16)
+                }
+            } else {
+                // Fallback when state not yet loaded
+                if let assetName = notification.notificationType.iconAssetName,
+                   let image = templateIcon(named: assetName, size: 16) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: notification.notificationType.icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16, height: 16)
+                }
+            }
+        case .issue:
+            if let state = issueState {
+                if let image = templateIcon(named: state.iconAssetName, size: 16) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundStyle(state.color)
+                        .frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: state.icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(state.color)
+                        .frame(width: 16, height: 16)
+                }
+            } else {
+                if let assetName = notification.notificationType.iconAssetName,
+                   let image = templateIcon(named: assetName, size: 16) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: notification.notificationType.icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16, height: 16)
+                }
+            }
         default:
-            return Color(nsColor: .tertiaryLabelColor)
+            Image(systemName: notification.notificationType.icon)
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .frame(width: 16, height: 16)
         }
     }
+
 
     private var tabPicker: some View {
         Picker("", selection: Binding(
