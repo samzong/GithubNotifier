@@ -19,6 +19,14 @@
 "menubar.mark.all.read" = "Mark All Read";
 "menubar.smart.mark" = "Smart Mark";
 "menubar.open.in.browser" = "Open in browser";
+"menubar.refresh" = "Refresh";
+"menubar.quit" = "Quit";
+"menubar.open.github.notifications" = "Open GitHub Notifications";
+"menubar.tab.all" = "All";
+"menubar.tab.issues" = "Issues";
+"menubar.tab.prs" = "PRs";
+"menubar.empty.issues" = "No unread Issues";
+"menubar.empty.prs" = "No unread PRs";
 
 /* Smart Mark Options */
 "filter.only.merged.prs" = "Only Merged PRs";

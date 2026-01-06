@@ -19,6 +19,14 @@
 "menubar.mark.all.read" = "全部标为已读";
 "menubar.smart.mark" = "智能标记";
 "menubar.open.in.browser" = "在浏览器中打开";
+"menubar.refresh" = "刷新";
+"menubar.quit" = "退出";
+"menubar.open.github.notifications" = "打开 GitHub 通知";
+"menubar.tab.all" = "All";
+"menubar.tab.issues" = "Issues";
+"menubar.tab.prs" = "PRs";
+"menubar.empty.issues" = "没有未读 Issues";
+"menubar.empty.prs" = "没有未读 PRs";
 
 /* Smart Mark Options */
 "filter.only.merged.prs" = "仅已合并的 PR";
