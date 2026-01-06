@@ -35,6 +35,15 @@ class NotificationService {
         self.api = GitHubAPI(token: token)
     }
 
+    func clearToken() {
+        api = nil
+        notifications = []
+        errorMessage = nil
+        isLoading = false
+        prStateCache = [:]
+        issueStateCache = [:]
+    }
+
     func fetchNotifications() async {
         guard let api = api else {
             errorMessage = "GitHub token not configured"

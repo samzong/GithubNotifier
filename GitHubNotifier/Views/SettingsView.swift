@@ -1,110 +1,131 @@
 import SwiftUI
+import ServiceManagement
 
 struct SettingsView: View {
     @Environment(NotificationService.self) private var notificationService
     @AppStorage(UserPreferences.refreshIntervalKey) private var refreshInterval: Double = 60
-    @AppStorage(UserPreferences.showNotificationCountKey) private var showNotificationCount = true
+    @AppStorage(UserPreferences.launchAtLoginKey) private var launchAtLogin = false    
     @State private var token = ""
-    @State private var showingTokenSaved = false
-    @State private var viewID = UUID()
-
-    private var isLoggedIn: Bool {
-        guard let savedToken = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey) else {
-            return false
-        }
-        return !savedToken.isEmpty
-    }
-
+    @State private var hasLoadedToken = false
+    @FocusState private var isTokenFocused: Bool    
+    private let settingsWidth: CGFloat = 480
+    
+    private let refreshOptions: [(seconds: Double, label: String)] = [
+        (60, "settings.refresh.1min".localized),
+        (120, "settings.refresh.2min".localized),
+        (300, "settings.refresh.5min".localized),
+        (600, "settings.refresh.10min".localized)
+    ]
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("settings.title".localized)
-                .font(.headline)
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("settings.github.token.title".localized)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-
-                if isLoggedIn {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text("settings.github.connected".localized)
-                            .foregroundColor(.green)
-                    }
-
-                    if let savedToken = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey),
-                       savedToken.count > 10 {
-                        Text("Token: \(String(savedToken.prefix(10)))...")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Button("settings.github.logout".localized) {
-                        logout()
-                    }
-                    .buttonStyle(.bordered)
-                } else {
-                    SecureField("ghp_...", text: $token)
-                        .textFieldStyle(.roundedBorder)
-
-                    Button("settings.github.save.token".localized) {
-                        saveToken()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(token.isEmpty)
-
-                    if showingTokenSaved {
-                        Text("settings.github.token.saved".localized)
-                            .foregroundColor(.green)
-                            .font(.caption)
-                    }
-
-                    Text("settings.github.token.hint".localized)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+        TabView {
+            generalSettings
+                .tabItem {
+                    Label("settings.tab.general".localized, systemImage: "gearshape")
                 }
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(String(format: "settings.refresh.interval".localized, Int(refreshInterval)))
-                    .font(.subheadline)
-
-                Slider(value: $refreshInterval, in: 30...300, step: 30)
-            }
-
-            Toggle("settings.show.notification.count".localized, isOn: $showNotificationCount)
-
-            Spacer()
+            
+            accountSettings
+                .tabItem {
+                    Label("settings.tab.account".localized, systemImage: "person.crop.circle")
+                }
         }
+        .frame(width: settingsWidth)
         .padding()
-        .frame(width: 400, height: 350)
-        .id(viewID)
-    }
-
-    private func saveToken() {
-        if KeychainHelper.shared.save(token, forKey: UserPreferences.tokenKeychainKey) {
-            notificationService.configure(token: token)
-            showingTokenSaved = true
-            viewID = UUID()
-
-            Task {
-                await notificationService.fetchNotifications()
+        .onAppear {
+            if let savedToken = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey) {
+                token = savedToken
             }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                showingTokenSaved = false
-            }
+            hasLoadedToken = true
         }
     }
 
-    private func logout() {
-        _ = KeychainHelper.shared.delete(forKey: UserPreferences.tokenKeychainKey)
+    private var generalSettings: some View {
+        Form {
+            Section {
+                Picker("settings.refresh.title".localized, selection: $refreshInterval) {
+                    ForEach(refreshOptions, id: \.seconds) { option in
+                        Text(option.label).tag(option.seconds)
+                    }
+                }
+                .pickerStyle(.menu) // Native macOS popup button
+                .onChange(of: refreshInterval) { _, newValue in
+                    notificationService.startAutoRefresh(interval: newValue)
+                }
+                
+                Toggle("settings.startup.launch".localized, isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { _, newValue in
+                        setLaunchAtLogin(newValue)
+                    }
+            }
+        }
+        .formStyle(.grouped)
+        .frame(width: settingsWidth)
+    }
+    
+    
+    private var accountSettings: some View {
+        Form {
+            Section {
+                SecureField("settings.token.title".localized, text: $token)
+                    .focused($isTokenFocused)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit {
+                        saveTokenAutomatically(token)
+                    }
+                    .onChange(of: isTokenFocused) { _, focused in
+                        if !focused {
+                            saveTokenAutomatically(token)
+                        }
+                    }
+                
+                Link("settings.token.generate.link".localized, destination: URL(string: "https://github.com/settings/tokens/new")!)
+                    .font(.caption)
+                    .foregroundStyle(.link)
+            }
+        }
+        .formStyle(.grouped)
+        .frame(width: settingsWidth)
+    }
+    
+    private func saveTokenAutomatically(_ newToken: String) {
+        guard hasLoadedToken else { return }
+        
+        let trimmedToken = newToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmedToken.isEmpty {
+            clearToken()
+            return
+        }
+        
+        // Only save if it's different from what's potentially already saved (optimization)
+        let currentSaved = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey)
+        if currentSaved == trimmedToken {
+            return
+        }
+        
+        guard KeychainHelper.shared.save(trimmedToken, forKey: UserPreferences.tokenKeychainKey) else { return }
+        
+        notificationService.configure(token: trimmedToken)
+        Task {
+            await notificationService.fetchNotifications()
+        }
+    }
+    
+    private func clearToken() {
         token = ""
-        viewID = UUID()
+        _ = KeychainHelper.shared.delete(forKey: UserPreferences.tokenKeychainKey)
+        notificationService.clearToken()
+    }
+    
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            print("Failed to \(enabled ? "enable" : "disable") launch at login: \(error.localizedDescription)")
+        }
     }
 }

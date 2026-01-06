@@ -1,13 +1,23 @@
 /* Settings View */
 "settings.title" = "设置";
-"settings.github.token.title" = "GitHub 个人访问令牌";
-"settings.github.connected" = "已连接到 GitHub";
-"settings.github.logout" = "退出登录";
-"settings.github.save.token" = "保存 Token";
-"settings.github.token.saved" = "✓ Token 保存成功";
-"settings.github.token.hint" = "需要 notifications 和 repo 权限";
-"settings.refresh.interval" = "刷新间隔: %d 秒";
-"settings.show.notification.count" = "在菜单栏显示通知数量";
+
+/* Settings Tabs */
+"settings.tab.general" = "通用";
+"settings.tab.account" = "账户";
+
+/* General Tab */
+"settings.refresh.title" = "刷新频率:";
+"settings.refresh.1min" = "每 1 分钟";
+"settings.refresh.2min" = "每 2 分钟";
+"settings.refresh.5min" = "每 5 分钟";
+"settings.refresh.10min" = "每 10 分钟";
+
+"settings.startup.launch" = "登录时启动";
+
+/* Account Tab */
+"settings.token.title" = "个人令牌:";
+
+"settings.token.generate.link" = "如何生成令牌？";
 
 /* Menu Bar View */
 "menubar.title" = "通知";

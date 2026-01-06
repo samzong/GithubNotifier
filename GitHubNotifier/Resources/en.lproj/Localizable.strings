@@ -1,13 +1,23 @@
 /* Settings View */
 "settings.title" = "Settings";
-"settings.github.token.title" = "GitHub Personal Access Token";
-"settings.github.connected" = "Connected to GitHub";
-"settings.github.logout" = "Log Out";
-"settings.github.save.token" = "Save Token";
-"settings.github.token.saved" = "✓ Token saved successfully";
-"settings.github.token.hint" = "Requires notifications and repo permissions";
-"settings.refresh.interval" = "Refresh Interval: %d seconds";
-"settings.show.notification.count" = "Show notification count in menu bar";
+
+/* Settings Tabs */
+"settings.tab.general" = "General";
+"settings.tab.account" = "Account";
+
+/* General Tab */
+"settings.refresh.title" = "Refresh:";
+"settings.refresh.1min" = "Every 1 minute";
+"settings.refresh.2min" = "Every 2 minutes";
+"settings.refresh.5min" = "Every 5 minutes";
+"settings.refresh.10min" = "Every 10 minutes";
+
+"settings.startup.launch" = "Launch at login";
+
+/* Account Tab */
+"settings.token.title" = "Personal Token:";
+
+"settings.token.generate.link" = "How to generate a token?";
 
 /* Menu Bar View */
 "menubar.title" = "Notifications";

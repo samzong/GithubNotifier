@@ -31,8 +31,9 @@ struct UserPreferences {
     var autoMarkAsReadOnOpen: Bool = false
 
     static let tokenKeychainKey = "github_personal_access_token"
-    
+
     static let refreshIntervalKey = "refreshInterval"
     static let showNotificationCountKey = "showNotificationCount"
+    static let launchAtLoginKey = "launchAtLogin"
 }
 
