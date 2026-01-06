@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MenuBarView: View {
-    @EnvironmentObject var notificationService: NotificationService
+    @Environment(NotificationService.self) private var notificationService
     @State private var filterOptions = FilterOptions()
     @State private var showingSettings = false
 
@@ -55,7 +55,7 @@ struct MenuBarView: View {
             .buttonStyle(.plain)
             .popover(isPresented: $showingSettings) {
                 SettingsView()
-                    .environmentObject(notificationService)
+                    .environment(notificationService)
             }
         }
         .padding(.horizontal, 12)

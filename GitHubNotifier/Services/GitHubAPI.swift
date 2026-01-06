@@ -28,7 +28,7 @@ class GitHubAPI {
     }
 
     func fetchPullRequest(owner: String, repo: String, number: Int) async throws -> PullRequest {
-        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/pulls/\(number)"
+        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/pull/\(number)"
         let data = try await makeRequest(endpoint: endpoint)
 
         let decoder = JSONDecoder()
@@ -37,7 +37,7 @@ class GitHubAPI {
     }
 
     func fetchIssue(owner: String, repo: String, number: Int) async throws -> Issue {
-        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/issues/\(number)"
+        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/issue/\(number)"
         let data = try await makeRequest(endpoint: endpoint)
 
         let decoder = JSONDecoder()
@@ -52,7 +52,7 @@ class GitHubAPI {
 
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.addValue("token \(token)", forHTTPHeaderField: "Authorization")
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.addValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
 
         if let body = body {
@@ -64,6 +64,25 @@ class GitHubAPI {
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
+        }
+
+        // Handle rate limiting
+        if httpResponse.statusCode == 403 || httpResponse.statusCode == 429 {
+            if let resetHeader = httpResponse.value(forHTTPHeaderField: "X-RateLimit-Reset"),
+               let resetTimestamp = TimeInterval(resetHeader) {
+                let resetDate = Date(timeIntervalSince1970: resetTimestamp)
+                throw APIError.rateLimited(resetTime: resetDate)
+            }
+            // Check if it's a rate limit error from response body
+            if let remaining = httpResponse.value(forHTTPHeaderField: "X-RateLimit-Remaining"),
+               remaining == "0" {
+                throw APIError.rateLimited(resetTime: nil)
+            }
+        }
+
+        // Handle unauthorized
+        if httpResponse.statusCode == 401 {
+            throw APIError.unauthorized
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
@@ -80,6 +99,7 @@ enum APIError: Error, LocalizedError {
     case httpError(statusCode: Int)
     case decodingError(Error)
     case unauthorized
+    case rateLimited(resetTime: Date?)
 
     var errorDescription: String? {
         switch self {
@@ -93,6 +113,14 @@ enum APIError: Error, LocalizedError {
             return "Failed to decode response: \(error.localizedDescription)"
         case .unauthorized:
             return "Unauthorized. Please check your GitHub token."
+        case .rateLimited(let resetTime):
+            if let resetTime = resetTime {
+                let formatter = RelativeDateTimeFormatter()
+                formatter.unitsStyle = .full
+                let relativeTime = formatter.localizedString(for: resetTime, relativeTo: Date())
+                return "Rate limit exceeded. Resets \(relativeTime)."
+            }
+            return "Rate limit exceeded. Please try again later."
         }
     }
 }

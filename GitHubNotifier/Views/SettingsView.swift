@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @EnvironmentObject var notificationService: NotificationService
+    @Environment(NotificationService.self) private var notificationService
     @AppStorage(UserPreferences.refreshIntervalKey) private var refreshInterval: Double = 60
     @AppStorage(UserPreferences.showNotificationCountKey) private var showNotificationCount = true
     @State private var token = ""

@@ -36,6 +36,3 @@ struct UserPreferences {
     static let showNotificationCountKey = "showNotificationCount"
 }
 
-extension Notification.Name {
-    static let notificationsUpdated = Notification.Name("NotificationsUpdated")
-}

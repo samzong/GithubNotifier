@@ -1,12 +1,14 @@
 import Foundation
-import Combine
 
+@Observable
 @MainActor
-class NotificationService: ObservableObject {
-    @Published var notifications: [GitHubNotification] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published var filterOptions = FilterOptions()
+class NotificationService {
+    var notifications: [GitHubNotification] = []
+    var isLoading = false
+    var errorMessage: String?
+    var filterOptions = FilterOptions()
+
+    var unreadCount: Int { notifications.count }
 
     private var api: GitHubAPI?
     private var refreshTimer: Timer?
@@ -16,6 +18,16 @@ class NotificationService: ObservableObject {
     init(token: String? = nil) {
         if let token = token {
             self.api = GitHubAPI(token: token)
+        }
+        startAutoRefreshIfNeeded()
+    }
+
+    private func startAutoRefreshIfNeeded() {
+        let interval = UserDefaults.standard.double(forKey: UserPreferences.refreshIntervalKey)
+        startAutoRefresh(interval: interval > 0 ? interval : 60)
+
+        Task {
+            await fetchNotifications()
         }
     }
 
@@ -47,6 +59,10 @@ class NotificationService: ObservableObject {
     private func loadNotificationStates() async {
         guard let api = api else { return }
 
+        // Collect notifications that need state loading
+        var prRequests: [(cacheKey: String, owner: String, repo: String, number: Int)] = []
+        var issueRequests: [(cacheKey: String, owner: String, repo: String, number: Int)] = []
+
         for notification in notifications {
             let owner = notification.repository.owner.login
             let repo = notification.repository.name
@@ -56,22 +72,62 @@ class NotificationService: ObservableObject {
                 if let number = notification.issueOrPRNumber {
                     let cacheKey = "\(owner)/\(repo)/pr/\(number)"
                     if prStateCache[cacheKey] == nil {
-                        if let pr = try? await api.fetchPullRequest(owner: owner, repo: repo, number: number) {
-                            prStateCache[cacheKey] = determinePRState(pr)
-                        }
+                        prRequests.append((cacheKey, owner, repo, number))
                     }
                 }
             case .issue:
                 if let number = notification.issueOrPRNumber {
                     let cacheKey = "\(owner)/\(repo)/issue/\(number)"
                     if issueStateCache[cacheKey] == nil {
-                        if let issue = try? await api.fetchIssue(owner: owner, repo: repo, number: number) {
-                            issueStateCache[cacheKey] = determineIssueState(issue)
-                        }
+                        issueRequests.append((cacheKey, owner, repo, number))
                     }
                 }
             default:
                 break
+            }
+        }
+
+        // Fetch PR states concurrently
+        await withTaskGroup(of: (String, PRState?).self) { group in
+            for request in prRequests {
+                group.addTask {
+                    if let pr = try? await api.fetchPullRequest(
+                        owner: request.owner,
+                        repo: request.repo,
+                        number: request.number
+                    ) {
+                        return (request.cacheKey, self.determinePRState(pr))
+                    }
+                    return (request.cacheKey, nil)
+                }
+            }
+
+            for await (cacheKey, state) in group {
+                if let state = state {
+                    prStateCache[cacheKey] = state
+                }
+            }
+        }
+
+        // Fetch Issue states concurrently
+        await withTaskGroup(of: (String, IssueState?).self) { group in
+            for request in issueRequests {
+                group.addTask {
+                    if let issue = try? await api.fetchIssue(
+                        owner: request.owner,
+                        repo: request.repo,
+                        number: request.number
+                    ) {
+                        return (request.cacheKey, self.determineIssueState(issue))
+                    }
+                    return (request.cacheKey, nil)
+                }
+            }
+
+            for await (cacheKey, state) in group {
+                if let state = state {
+                    issueStateCache[cacheKey] = state
+                }
             }
         }
     }
@@ -185,7 +241,7 @@ class NotificationService: ObservableObject {
         refreshTimer = nil
     }
 
-    private func determinePRState(_ pr: PullRequest) -> PRState {
+    nonisolated private func determinePRState(_ pr: PullRequest) -> PRState {
         if pr.merged {
             return .merged
         } else if pr.state == "closed" {
@@ -197,7 +253,7 @@ class NotificationService: ObservableObject {
         }
     }
 
-    private func determineIssueState(_ issue: Issue) -> IssueState {
+    nonisolated private func determineIssueState(_ issue: Issue) -> IssueState {
         if issue.state == "closed" {
             if issue.stateReason == "completed" {
                 return .closedCompleted
