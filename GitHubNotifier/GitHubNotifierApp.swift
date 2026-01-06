@@ -43,7 +43,8 @@ struct MenuBarLabel: View {
             Image(nsImage: menuBarIcon)
             if unreadCount > 0 && showCount {
                 Text("\(unreadCount)")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.caption)
+                    .fontWeight(.semibold)
             }
         }
     }

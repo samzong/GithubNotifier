@@ -60,6 +60,17 @@ enum NotificationType: String, CaseIterable {
             return "questionmark.circle"
         }
     }
+
+    var iconAssetName: String? {
+        switch self {
+        case .pullRequest:
+            return "PullRequestOpen"
+        case .issue:
+            return "IssueOpen"
+        default:
+            return nil
+        }
+    }
 }
 
 enum PRState {
@@ -93,6 +104,19 @@ enum PRState {
             return "doc.text"
         }
     }
+
+    var iconAssetName: String {
+        switch self {
+        case .open:
+            return "PullRequestOpen"
+        case .closed:
+            return "PullRequestClosed"
+        case .merged:
+            return "PullRequestMerged"
+        case .draft:
+            return "PullRequestDraft"
+        }
+    }
 }
 
 enum IssueState {
@@ -119,6 +143,17 @@ enum IssueState {
             return "checkmark.circle"
         case .closedNotPlanned:
             return "xmark.circle"
+        }
+    }
+
+    var iconAssetName: String {
+        switch self {
+        case .open:
+            return "IssueOpen"
+        case .closedCompleted:
+            return "IssueClosed"
+        case .closedNotPlanned:
+            return "IssueNotPlanned"
         }
     }
 }

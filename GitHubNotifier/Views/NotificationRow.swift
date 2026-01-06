@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct NotificationRow: View {
     let notification: GitHubNotification
@@ -18,20 +19,21 @@ struct NotificationRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(notification.displayTitle)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.body)
+                    .fontWeight(.semibold)
                     .lineLimit(2)
 
                 Text(notification.displaySubtitle)
-                    .font(.system(size: 11))
+                    .font(.callout)
                     .foregroundColor(.secondary)
 
                 Text(notification.updatedAt.timeAgo())
-                    .font(.system(size: 10))
+                    .font(.caption)
                     .foregroundColor(.secondary)
 
                 if showingPreview, let preview = bodyPreview {
                     Text(preview.markdownPreview.truncate(to: 150))
-                        .font(.system(size: 11))
+                        .font(.callout)
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
                         .padding(.leading, 8)
@@ -87,24 +89,59 @@ struct NotificationRow: View {
         switch notification.notificationType {
         case .pullRequest:
             if let state = prState {
-                Image(systemName: state.icon)
-                    .foregroundColor(state.color)
+                if let image = templateIcon(named: state.iconAssetName, size: 20) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundColor(state.color)
+                } else {
+                    Image(systemName: state.icon)
+                        .foregroundColor(state.color)
+                }
             } else {
-                Image(systemName: notification.notificationType.icon)
-                    .foregroundColor(.secondary)
+                if let assetName = notification.notificationType.iconAssetName,
+                   let image = templateIcon(named: assetName, size: 20) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundColor(.secondary)
+                } else {
+                    Image(systemName: notification.notificationType.icon)
+                        .foregroundColor(.secondary)
+                }
             }
         case .issue:
             if let state = issueState {
-                Image(systemName: state.icon)
-                    .foregroundColor(state.color)
+                if let image = templateIcon(named: state.iconAssetName, size: 20) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundColor(state.color)
+                } else {
+                    Image(systemName: state.icon)
+                        .foregroundColor(state.color)
+                }
             } else {
-                Image(systemName: notification.notificationType.icon)
-                    .foregroundColor(.secondary)
+                if let assetName = notification.notificationType.iconAssetName,
+                   let image = templateIcon(named: assetName, size: 20) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundColor(.secondary)
+                } else {
+                    Image(systemName: notification.notificationType.icon)
+                        .foregroundColor(.secondary)
+                }
             }
         default:
             Image(systemName: notification.notificationType.icon)
                 .foregroundColor(.secondary)
         }
+    }
+
+    private func templateIcon(named name: String, size: CGFloat) -> NSImage? {
+        guard let image = NSImage(named: name) else {
+            return nil
+        }
+        image.size = NSSize(width: size, height: size)
+        image.isTemplate = true
+        return image
     }
 }
 

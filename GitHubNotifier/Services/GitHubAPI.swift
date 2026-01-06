@@ -3,9 +3,18 @@ import Foundation
 class GitHubAPI {
     private let baseURL = "https://api.github.com"
     private var token: String
+    private let session: URLSession
 
     init(token: String) {
         self.token = token
+
+        // GitHub notifications are time-sensitive; avoid stale results from URLSession/URLCache.
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.urlCache = nil
+        configuration.timeoutIntervalForRequest = 30
+        configuration.timeoutIntervalForResource = 60
+        self.session = URLSession(configuration: configuration)
     }
 
     func fetchNotifications() async throws -> [GitHubNotification] {
@@ -28,7 +37,7 @@ class GitHubAPI {
     }
 
     func fetchPullRequest(owner: String, repo: String, number: Int) async throws -> PullRequest {
-        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/pull/\(number)"
+        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/pulls/\(number)"
         let data = try await makeRequest(endpoint: endpoint)
 
         let decoder = JSONDecoder()
@@ -37,7 +46,7 @@ class GitHubAPI {
     }
 
     func fetchIssue(owner: String, repo: String, number: Int) async throws -> Issue {
-        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/issue/\(number)"
+        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/issues/\(number)"
         let data = try await makeRequest(endpoint: endpoint)
 
         let decoder = JSONDecoder()
@@ -52,15 +61,19 @@ class GitHubAPI {
 
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.addValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+        request.addValue("GitHubNotifier", forHTTPHeaderField: "User-Agent")
+        request.addValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        request.addValue("no-cache", forHTTPHeaderField: "Pragma")
 
         if let body = body {
             request.httpBody = body
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse

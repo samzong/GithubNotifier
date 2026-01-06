@@ -1,194 +1,389 @@
 import SwiftUI
+import AppKit
 
 struct MenuBarView: View {
     @Environment(NotificationService.self) private var notificationService
-    @State private var filterOptions = FilterOptions()
-    @State private var showingSettings = false
+    @Environment(\.openSettings) private var openSettings
+    @Environment(\.dismiss) private var dismiss
+
+    @AppStorage("menubar.selectedTab") private var selectedTabRawValue = MenuBarTab.all.rawValue
+
+    private var selectedTab: MenuBarTab {
+        get { MenuBarTab(rawValue: selectedTabRawValue) ?? .all }
+        nonmutating set { selectedTabRawValue = newValue.rawValue }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            headerSection
-
-            Divider()
-
-            if notificationService.isLoading && notificationService.notifications.isEmpty {
-                loadingView
-            } else if let error = notificationService.errorMessage {
-                errorView(error)
-            } else if notificationService.notifications.isEmpty {
-                emptyView
-            } else {
-                notificationList
+            MenuRowButton(nsImage: githubIcon, title: "menubar.open.github.notifications".localized, shortcutHint: "⌘0") {
+                closeMenuBarWindow()
+                openUnreadNotificationsInBrowser()
             }
+            .keyboardShortcut("0", modifiers: .command)
 
             Divider()
 
-            footerSection
+            tabPicker
+
+            Divider()
+
+            notificationsSection
+
+            Divider()
+
+            MenuRowButton(title: "settings.title".localized, shortcutHint: "⌘,") {
+                openSettingsAndBringToFront()
+            }
+            .keyboardShortcut(",", modifiers: .command)
+
+            Divider()
+
+            MenuRowButton(title: "menubar.quit".localized, shortcutHint: "⌘Q", role: .destructive) {
+                NSApplication.shared.terminate(nil)
+            }
+            .keyboardShortcut("q", modifiers: .command)
         }
-        .frame(width: 400, height: 600)
+        .frame(width: 360)
+        .padding(.vertical, 6)
+        .task {
+            clearInitialFocus()
+            if notificationService.notifications.isEmpty {
+                await notificationService.fetchNotifications()
+            }
+        }
     }
 
-    private var headerSection: some View {
-        HStack {
-            Text("menubar.title".localized)
-                .font(.headline)
+    @ViewBuilder
+    private var notificationsSection: some View {
+        if notificationService.isLoading && notificationService.notifications.isEmpty {
+            MenuRowText("menubar.loading".localized)
+        } else if let error = notificationService.errorMessage {
+            MenuRowText("\("menubar.error.title".localized): \(error)")
 
-            Spacer()
-
-            Button(action: {
+            MenuRowButton(title: "menubar.retry".localized) {
                 Task {
                     await notificationService.fetchNotifications()
                 }
-            }) {
-                Image(systemName: "arrow.clockwise")
-                    .foregroundColor(.secondary)
             }
-            .buttonStyle(.plain)
-            .disabled(notificationService.isLoading)
-
-            Button(action: {
-                showingSettings.toggle()
-            }) {
-                Image(systemName: "gear")
-                    .foregroundColor(.secondary)
-            }
-            .buttonStyle(.plain)
-            .popover(isPresented: $showingSettings) {
-                SettingsView()
-                    .environment(notificationService)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-    }
-
-    private var notificationList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(notificationService.notifications) { notification in
-                    NotificationRow(
-                        notification: notification,
-                        prState: notificationService.getPRState(for: notification),
-                        issueState: notificationService.getIssueState(for: notification),
-                        onOpen: {
-                            openNotification(notification)
-                        },
-                        onMarkAsRead: {
-                            Task {
-                                await notificationService.markAsRead(notification: notification)
+        } else if notificationService.notifications.isEmpty {
+            MenuRowText("menubar.empty.title".localized)
+        } else if filteredNotifications.isEmpty {
+            MenuRowText(emptyTitleForSelectedTab)
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(filteredNotifications.prefix(20))) { notification in
+                        if let assetName = notification.notificationType.iconAssetName,
+                           let image = templateIcon(named: assetName, size: 16) {
+                            MenuRowButton(nsImage: image, title: menuTitle(for: notification)) {
+                                closeMenuBarWindow()
+                                openNotification(notification)
+                            }
+                        } else {
+                            MenuRowButton(systemImage: notification.notificationType.icon, title: menuTitle(for: notification)) {
+                                closeMenuBarWindow()
+                                openNotification(notification)
                             }
                         }
-                    )
-
-                    if notification.id != notificationService.notifications.last?.id {
-                        Divider()
-                            .padding(.leading, 44)
                     }
                 }
+                .padding(.vertical, 2)
             }
+            .frame(maxHeight: 420)
         }
     }
 
-    private var footerSection: some View {
-        HStack(spacing: 12) {
-            Button("menubar.mark.all.read".localized) {
-                Task {
-                    await notificationService.markAllAsRead()
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(notificationService.notifications.isEmpty)
-
-            Menu {
-                Toggle("filter.only.merged.prs".localized, isOn: $filterOptions.onlyMergedPRs)
-                Toggle("filter.only.closed.issues".localized, isOn: $filterOptions.onlyClosedIssues)
-
-                Divider()
-
-                Button("filter.apply.smart.mark".localized) {
-                    notificationService.filterOptions = filterOptions
-                    Task {
-                        await notificationService.smartMarkAsRead()
-                    }
-                }
-            } label: {
-                Image(systemName: "line.3.horizontal.decrease.circle")
-                Text("menubar.smart.mark".localized)
-            }
-            .disabled(notificationService.notifications.isEmpty)
-
-            Spacer()
-
-            Button(action: {
-                if let url = URL(string: "https://github.com/notifications") {
-                    NSWorkspace.shared.open(url)
-                }
-            }) {
-                Image(systemName: "arrow.up.forward.square")
-            }
-            .buttonStyle(.plain)
-            .help("menubar.open.in.browser".localized)
+    private var tabPicker: some View {
+        Picker("", selection: Binding(
+            get: { selectedTab },
+            set: { selectedTab = $0 }
+        )) {
+            Text("\("menubar.tab.all".localized)(\(allCount))")
+                .tag(MenuBarTab.all)
+            Text("\("menubar.tab.issues".localized)(\(issuesCount))")
+                .tag(MenuBarTab.issues)
+            Text("\("menubar.tab.prs".localized)(\(prsCount))")
+                .tag(MenuBarTab.prs)
         }
-        .padding(.horizontal, 12)
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .controlSize(.small)
+        .padding(.horizontal, 10)
         .padding(.vertical, 8)
     }
 
-    private var loadingView: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("menubar.loading".localized)
-                .foregroundColor(.secondary)
-                .font(.subheadline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    private var allCount: Int { notificationService.notifications.count }
+
+    private var issuesCount: Int {
+        notificationService.notifications.filter { $0.notificationType == .issue }.count
     }
 
-    private var emptyView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "tray")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary)
-            Text("menubar.empty.title".localized)
-                .font(.headline)
-            Text("menubar.empty.subtitle".localized)
-                .foregroundColor(.secondary)
-                .font(.subheadline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+    private var prsCount: Int {
+        notificationService.notifications.filter { $0.notificationType == .pullRequest }.count
     }
 
-    private func errorView(_ error: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
-                .foregroundColor(.red)
-            Text("menubar.error.title".localized)
-                .font(.headline)
-            Text(error)
-                .foregroundColor(.secondary)
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-
-            Button("menubar.retry".localized) {
-                Task {
-                    await notificationService.fetchNotifications()
-                }
-            }
-            .buttonStyle(.borderedProminent)
+    private var filteredNotifications: [GitHubNotification] {
+        switch selectedTab {
+        case .all:
+            return notificationService.notifications
+        case .issues:
+            return notificationService.notifications.filter { $0.notificationType == .issue }
+        case .prs:
+            return notificationService.notifications.filter { $0.notificationType == .pullRequest }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+    }
+
+    private var emptyTitleForSelectedTab: String {
+        switch selectedTab {
+        case .all:
+            return "menubar.empty.title".localized
+        case .issues:
+            return "menubar.empty.issues".localized
+        case .prs:
+            return "menubar.empty.prs".localized
+        }
+    }
+
+    private func openUnreadNotificationsInBrowser() {
+        if let url = URL(string: "https://github.com/notifications?query=is%3Aunread") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private func openNotification(_ notification: GitHubNotification) {
-        if let urlString = notification.subject.url,
-           let url = URL(string: urlString.replacingOccurrences(of: "api.github.com/repos", with: "github.com")) {
+        if let url = webURL(for: notification) {
             NSWorkspace.shared.open(url)
 
             Task {
                 await notificationService.markAsRead(notification: notification)
             }
+        }
+    }
+
+    private func menuTitle(for notification: GitHubNotification) -> String {
+        let title = "\(notification.repository.fullName): \(notification.displayTitle)"
+        return title.truncate(to: 180)
+    }
+
+    private func webURL(for notification: GitHubNotification) -> URL? {
+        guard let apiURLString = notification.subject.url,
+              let apiURL = URL(string: apiURLString),
+              apiURL.host == "api.github.com" else {
+            return notification.subject.url.flatMap(URL.init(string:))
+        }
+
+        let segments = apiURL.path.split(separator: "/").map(String.init)
+        guard segments.count >= 3, segments.first == "repos" else {
+            return URL(string: apiURLString.replacingOccurrences(of: "api.github.com", with: "github.com"))
+        }
+
+        let owner = segments[1]
+        let repo = segments[2]
+        let rest = Array(segments.dropFirst(3))
+
+        if rest.count >= 2 {
+            let resource = rest[0]
+            let identifier = rest[1]
+
+            switch notification.notificationType {
+            case .pullRequest:
+                if resource == "pulls" || resource == "issues" {
+                    return URL(string: "https://github.com/\(owner)/\(repo)/pull/\(identifier)")
+                }
+            case .issue:
+                if resource == "issues" {
+                    return URL(string: "https://github.com/\(owner)/\(repo)/issues/\(identifier)")
+                }
+            default:
+                break
+            }
+
+            let mapping: [String: String] = [
+                "pulls": "pull",
+                "commits": "commit"
+            ]
+            let mappedResource = mapping[resource] ?? resource
+            let path = ([owner, repo, mappedResource] + Array(rest.dropFirst(1))).joined(separator: "/")
+            return URL(string: "https://github.com/\(path)")
+        }
+
+        return URL(string: "https://github.com/\(owner)/\(repo)")
+    }
+
+    private var githubIcon: NSImage {
+        guard let image = NSImage(named: "GitHubLogo") else {
+            return NSImage()
+        }
+        image.size = NSSize(width: 16, height: 16)
+        image.isTemplate = true
+        return image
+    }
+
+    private func templateIcon(named name: String, size: CGFloat) -> NSImage? {
+        guard let image = NSImage(named: name) else {
+            return nil
+        }
+        image.size = NSSize(width: size, height: size)
+        image.isTemplate = true
+        return image
+    }
+
+    private func clearInitialFocus() {
+        DispatchQueue.main.async {
+            NSApplication.shared.keyWindow?.makeFirstResponder(nil)
+        }
+    }
+
+    private func openSettingsAndBringToFront() {
+        closeMenuBarWindow()
+        openSettings()
+
+        DispatchQueue.main.async {
+            _ = NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            bringSettingsWindowToFront()
+        }
+    }
+
+    private func bringSettingsWindowToFront() {
+        let expectedTitle = "settings.title".localized
+
+        if let window = NSApplication.shared.windows.first(where: { $0.title == expectedTitle }) {
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        if let window = NSApplication.shared.windows.first(where: { $0.title.localizedCaseInsensitiveContains(expectedTitle) }) {
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        if let window = NSApplication.shared.windows.first(where: { $0.isVisible && $0.canBecomeKey }) {
+            window.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    private func closeMenuBarWindow() {
+        dismiss()
+
+        if let keyWindow = NSApplication.shared.keyWindow {
+            keyWindow.performClose(nil)
+        }
+    }
+}
+
+private enum MenuBarTab: String, CaseIterable {
+    case all
+    case issues
+    case prs
+}
+
+private struct MenuRowText: View {
+    let title: String
+
+    init(_ title: String) {
+        self.title = title
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+    }
+}
+
+private struct MenuRowButton: View {
+    enum LeadingIcon {
+        case system(String)
+        case nsImage(NSImage)
+        case none
+    }
+
+    let leadingIcon: LeadingIcon
+    let title: String
+    let shortcutHint: String?
+    let role: ButtonRole?
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    init(systemImage: String, title: String, shortcutHint: String? = nil, role: ButtonRole? = nil, action: @escaping () -> Void) {
+        self.leadingIcon = .system(systemImage)
+        self.title = title
+        self.shortcutHint = shortcutHint
+        self.role = role
+        self.action = action
+    }
+
+    init(nsImage: NSImage, title: String, shortcutHint: String? = nil, role: ButtonRole? = nil, action: @escaping () -> Void) {
+        self.leadingIcon = .nsImage(nsImage)
+        self.title = title
+        self.shortcutHint = shortcutHint
+        self.role = role
+        self.action = action
+    }
+
+    init(title: String, shortcutHint: String? = nil, role: ButtonRole? = nil, action: @escaping () -> Void) {
+        self.leadingIcon = .none
+        self.title = title
+        self.shortcutHint = shortcutHint
+        self.role = role
+        self.action = action
+    }
+
+    var body: some View {
+        Button(role: role, action: action) {
+            HStack(spacing: 8) {
+                iconView
+                    .frame(width: 16, height: 16)
+
+                Text(title)
+                    .font(.callout)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Spacer(minLength: 8)
+
+                if let shortcutHint {
+                    Text(shortcutHint)
+                        .font(.callout)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(isHovered ? Color(nsColor: .selectedContentBackgroundColor).opacity(0.15) : Color.clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+    }
+
+    @ViewBuilder
+    private var iconView: some View {
+        switch leadingIcon {
+        case .system(let systemName):
+            Image(systemName: systemName)
+                .foregroundStyle(.secondary)
+        case .nsImage(let image):
+            if image.isTemplate {
+                Image(nsImage: image)
+                    .renderingMode(.template)
+                    .foregroundStyle(.secondary)
+            } else {
+                Image(nsImage: image)
+            }
+        case .none:
+            Color.clear
         }
     }
 }
