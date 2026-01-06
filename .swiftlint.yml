@@ -1,0 +1,42 @@
+# Disabled rules
+disabled_rules:
+  - trailing_whitespace
+  - force_cast
+  - cyclomatic_complexity
+  - file_header
+  - nesting
+  - multiple_closures_with_trailing_closure
+
+# Identifier name exceptions
+identifier_name:
+  excluded:
+    - pr
+    - id
+
+# Included paths
+included:
+  - GitHubNotifier
+
+# Excluded paths
+excluded:
+  - Pods
+  - fastlane
+  - vendor
+  - DerivedData
+
+# Line length
+line_length:
+  warning: 140
+  error: 200
+
+file_length:
+  warning: 900
+  error: 1200
+
+type_body_length:
+  warning: 550
+  error: 700
+
+function_body_length:
+  warning: 150
+  error: 200

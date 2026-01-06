@@ -1,0 +1,49 @@
+/* Settings View */
+"settings.title" = "Settings";
+"settings.github.token.title" = "GitHub Personal Access Token";
+"settings.github.connected" = "Connected to GitHub";
+"settings.github.logout" = "Log Out";
+"settings.github.save.token" = "Save Token";
+"settings.github.token.saved" = "✓ Token saved successfully";
+"settings.github.token.hint" = "Requires notifications and repo permissions";
+"settings.refresh.interval" = "Refresh Interval: %d seconds";
+"settings.show.notification.count" = "Show notification count in menu bar";
+
+/* Menu Bar View */
+"menubar.title" = "GitHub Notifications";
+"menubar.loading" = "Loading notifications...";
+"menubar.empty.title" = "No Unread Notifications";
+"menubar.empty.subtitle" = "You're all caught up!";
+"menubar.error.title" = "Error";
+"menubar.retry" = "Retry";
+"menubar.mark.all.read" = "Mark All Read";
+"menubar.smart.mark" = "Smart Mark";
+"menubar.open.in.browser" = "Open in browser";
+
+/* Smart Mark Options */
+"filter.only.merged.prs" = "Only Merged PRs";
+"filter.only.closed.issues" = "Only Closed Issues";
+"filter.apply.smart.mark" = "Apply Smart Mark";
+
+/* Notification Row */
+"notification.mark.as.read" = "Mark as read";
+"notification.hide.preview" = "Hide preview";
+"notification.show.preview" = "Show preview";
+
+/* Errors */
+"error.token.not.configured" = "GitHub token not configured";
+
+/* Time Ago */
+"time.years.ago" = "%d year ago";
+"time.years.ago.plural" = "%d years ago";
+"time.months.ago" = "%d month ago";
+"time.months.ago.plural" = "%d months ago";
+"time.weeks.ago" = "%d week ago";
+"time.weeks.ago.plural" = "%d weeks ago";
+"time.days.ago" = "%d day ago";
+"time.days.ago.plural" = "%d days ago";
+"time.hours.ago" = "%d hour ago";
+"time.hours.ago.plural" = "%d hours ago";
+"time.minutes.ago" = "%d minute ago";
+"time.minutes.ago.plural" = "%d minutes ago";
+"time.just.now" = "Just now";

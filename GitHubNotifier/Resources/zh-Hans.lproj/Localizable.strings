@@ -1,0 +1,49 @@
+/* Settings View */
+"settings.title" = "设置";
+"settings.github.token.title" = "GitHub 个人访问令牌";
+"settings.github.connected" = "已连接到 GitHub";
+"settings.github.logout" = "退出登录";
+"settings.github.save.token" = "保存 Token";
+"settings.github.token.saved" = "✓ Token 保存成功";
+"settings.github.token.hint" = "需要 notifications 和 repo 权限";
+"settings.refresh.interval" = "刷新间隔: %d 秒";
+"settings.show.notification.count" = "在菜单栏显示通知数量";
+
+/* Menu Bar View */
+"menubar.title" = "GitHub 通知";
+"menubar.loading" = "正在加载通知...";
+"menubar.empty.title" = "没有未读通知";
+"menubar.empty.subtitle" = "你已经全部看完了！";
+"menubar.error.title" = "错误";
+"menubar.retry" = "重试";
+"menubar.mark.all.read" = "全部标为已读";
+"menubar.smart.mark" = "智能标记";
+"menubar.open.in.browser" = "在浏览器中打开";
+
+/* Smart Mark Options */
+"filter.only.merged.prs" = "仅已合并的 PR";
+"filter.only.closed.issues" = "仅已关闭的 Issue";
+"filter.apply.smart.mark" = "应用智能标记";
+
+/* Notification Row */
+"notification.mark.as.read" = "标记为已读";
+"notification.hide.preview" = "隐藏预览";
+"notification.show.preview" = "显示预览";
+
+/* Errors */
+"error.token.not.configured" = "GitHub Token 未配置";
+
+/* Time Ago */
+"time.years.ago" = "%d 年前";
+"time.years.ago.plural" = "%d 年前";
+"time.months.ago" = "%d 个月前";
+"time.months.ago.plural" = "%d 个月前";
+"time.weeks.ago" = "%d 周前";
+"time.weeks.ago.plural" = "%d 周前";
+"time.days.ago" = "%d 天前";
+"time.days.ago.plural" = "%d 天前";
+"time.hours.ago" = "%d 小时前";
+"time.hours.ago.plural" = "%d 小时前";
+"time.minutes.ago" = "%d 分钟前";
+"time.minutes.ago.plural" = "%d 分钟前";
+"time.just.now" = "刚刚";
