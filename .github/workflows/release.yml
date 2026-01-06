@@ -9,6 +9,9 @@ jobs:
   release:
     name: Create Release
     runs-on: macos-latest
+    permissions:
+      contents: write
+      pull-requests: read
 
     steps:
       - uses: actions/checkout@v4
