@@ -10,16 +10,17 @@
 "settings.show.notification.count" = "Show notification count in menu bar";
 
 /* Menu Bar View */
-"menubar.title" = "GitHub Notifications";
+"menubar.title" = "Notifications";
 "menubar.loading" = "Loading notifications...";
 "menubar.empty.title" = "No Unread Notifications";
-"menubar.empty.subtitle" = "You're all caught up!";
+"menubar.empty.subtitle" = "All caught up!";
 "menubar.error.title" = "Error";
 "menubar.retry" = "Retry";
 "menubar.mark.all.read" = "Mark All Read";
 "menubar.smart.mark" = "Smart Mark";
 "menubar.open.in.browser" = "Open in browser";
 "menubar.refresh" = "Refresh";
+"menubar.preferences" = "Preferences...";
 "menubar.quit" = "Quit";
 "menubar.open.github.notifications" = "Open GitHub Notifications";
 "menubar.tab.all" = "All";

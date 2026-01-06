@@ -15,11 +15,27 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            MenuRowButton(nsImage: githubIcon, title: "menubar.open.github.notifications".localized, shortcutHint: "⌘0") {
-                closeMenuBarWindow()
-                openUnreadNotificationsInBrowser()
+            // Header with title and external link icon
+            HStack {
+                Text("menubar.title".localized)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                Button(action: {
+                    closeMenuBarWindow()
+                    openUnreadNotificationsInBrowser()
+                }) {
+                    Image(systemName: "arrow.up.forward.square")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("menubar.open.github.notifications".localized)
             }
-            .keyboardShortcut("0", modifiers: .command)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
 
             Divider()
 
@@ -31,20 +47,31 @@ struct MenuBarView: View {
 
             Divider()
 
-            MenuRowButton(title: "settings.title".localized, shortcutHint: "⌘,") {
+            // Footer menu
+            MenuRowButton(systemImage: "arrow.clockwise", title: "menubar.refresh".localized, shortcutHint: "⌘R") {
+                Task {
+                    await notificationService.fetchNotifications()
+                }
+            }
+            .keyboardShortcut("r", modifiers: .command)
+
+            Divider()
+
+            MenuRowButton(systemImage: "gearshape", title: "menubar.preferences".localized, shortcutHint: "⌘,") {
                 openSettingsAndBringToFront()
             }
             .keyboardShortcut(",", modifiers: .command)
 
             Divider()
 
-            MenuRowButton(title: "menubar.quit".localized, shortcutHint: "⌘Q", role: .destructive) {
+            MenuRowButton(systemImage: "power", title: "menubar.quit".localized, shortcutHint: "⌘Q", role: .destructive) {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q", modifiers: .command)
         }
         .frame(width: 360)
-        .padding(.vertical, 6)
+        .padding(.top, 6)
+        .padding(.bottom, 8)
         .task {
             clearInitialFocus()
             if notificationService.notifications.isEmpty {
@@ -65,31 +92,90 @@ struct MenuBarView: View {
                     await notificationService.fetchNotifications()
                 }
             }
-        } else if notificationService.notifications.isEmpty {
-            MenuRowText("menubar.empty.title".localized)
-        } else if filteredNotifications.isEmpty {
-            MenuRowText(emptyTitleForSelectedTab)
+        } else if notificationService.notifications.isEmpty || filteredNotifications.isEmpty {
+            // Show "All caught up!" message when no notifications
+            Text("menubar.empty.subtitle".localized)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .italic()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
         } else {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(filteredNotifications.prefix(20))) { notification in
-                        if let assetName = notification.notificationType.iconAssetName,
-                           let image = templateIcon(named: assetName, size: 16) {
-                            MenuRowButton(nsImage: image, title: menuTitle(for: notification)) {
-                                closeMenuBarWindow()
-                                openNotification(notification)
-                            }
-                        } else {
-                            MenuRowButton(systemImage: notification.notificationType.icon, title: menuTitle(for: notification)) {
-                                closeMenuBarWindow()
-                                openNotification(notification)
-                            }
-                        }
+                        notificationListItem(for: notification)
                     }
                 }
-                .padding(.vertical, 2)
             }
             .frame(maxHeight: 420)
+        }
+    }
+
+    @ViewBuilder
+    private func notificationListItem(for notification: GitHubNotification) -> some View {
+        Button(action: {
+            closeMenuBarWindow()
+            openNotification(notification)
+        }) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    // Repository name + time ago
+                    HStack(spacing: 4) {
+                        Text(notification.repository.name)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.primary)
+
+                        Text("•")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+
+                        Text(notification.updatedAt.timeAgo())
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+                    }
+
+                    // Notification title
+                    Text(notification.displayTitle)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Spacer(minLength: 8)
+
+                // Icon on the right
+                if let assetName = notification.notificationType.iconAssetName,
+                   let image = templateIcon(named: assetName, size: 16) {
+                    Image(nsImage: image)
+                        .renderingMode(.template)
+                        .foregroundStyle(iconColor(for: notification))
+                        .frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: notification.notificationType.icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(iconColor(for: notification))
+                        .frame(width: 16, height: 16)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private func iconColor(for notification: GitHubNotification) -> Color {
+        switch notification.notificationType {
+        case .issue:
+            return Color.green
+        case .pullRequest:
+            return Color.purple
+        default:
+            return Color(nsColor: .tertiaryLabelColor)
         }
     }
 

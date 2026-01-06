@@ -10,16 +10,17 @@
 "settings.show.notification.count" = "在菜单栏显示通知数量";
 
 /* Menu Bar View */
-"menubar.title" = "GitHub 通知";
+"menubar.title" = "通知";
 "menubar.loading" = "正在加载通知...";
 "menubar.empty.title" = "没有未读通知";
-"menubar.empty.subtitle" = "你已经全部看完了！";
+"menubar.empty.subtitle" = "全部看完了！";
 "menubar.error.title" = "错误";
 "menubar.retry" = "重试";
 "menubar.mark.all.read" = "全部标为已读";
 "menubar.smart.mark" = "智能标记";
 "menubar.open.in.browser" = "在浏览器中打开";
 "menubar.refresh" = "刷新";
+"menubar.preferences" = "偏好设置...";
 "menubar.quit" = "退出";
 "menubar.open.github.notifications" = "打开 GitHub 通知";
 "menubar.tab.all" = "All";
