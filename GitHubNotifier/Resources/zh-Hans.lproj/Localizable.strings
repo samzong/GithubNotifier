@@ -4,6 +4,20 @@
 /* Settings Tabs */
 "settings.tab.general" = "通用";
 "settings.tab.account" = "账户";
+"settings.tab.about" = "关于";
+
+/* About Tab */
+"about.github.repo" = "GitHub 仓库";
+"about.report.issue" = "报告问题";
+"about.version" = "版本:";
+"about.check.update" = "检查更新";
+"about.new.version" = "有新版本可用:";
+"about.download" = "下载";
+"about.license" = "许可证:";
+"about.up.to.date" = "已是最新版本！";
+"about.error.invalid.url" = "无效的 URL";
+"about.error.parse" = "解析响应失败";
+"about.error.network" = "网络错误";
 
 /* General Tab */
 "settings.refresh.title" = "刷新频率:";

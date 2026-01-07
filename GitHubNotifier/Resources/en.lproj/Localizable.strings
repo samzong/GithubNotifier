@@ -4,6 +4,20 @@
 /* Settings Tabs */
 "settings.tab.general" = "General";
 "settings.tab.account" = "Account";
+"settings.tab.about" = "About";
+
+/* About Tab */
+"about.github.repo" = "GitHub Repository";
+"about.report.issue" = "Report an Issue";
+"about.version" = "Version:";
+"about.check.update" = "Check for Updates";
+"about.new.version" = "New version available:";
+"about.download" = "Download";
+"about.license" = "License:";
+"about.up.to.date" = "You're up to date!";
+"about.error.invalid.url" = "Invalid URL";
+"about.error.parse" = "Failed to parse response";
+"about.error.network" = "Network error";
 
 /* General Tab */
 "settings.refresh.title" = "Refresh:";
