@@ -8,6 +8,8 @@ struct MenuBarView: View {
 
     @AppStorage("menubar.selectedTab") private var selectedTabRawValue = MenuBarTab.all.rawValue
 
+    @State private var isMarkingAsRead = false
+
     private var selectedTab: MenuBarTab {
         get { MenuBarTab(rawValue: selectedTabRawValue) ?? .all }
         nonmutating set { selectedTabRawValue = newValue.rawValue }
@@ -227,22 +229,74 @@ struct MenuBarView: View {
     }
 
     private var tabPicker: some View {
-        Picker("", selection: Binding(
-            get: { selectedTab },
-            set: { selectedTab = $0 }
-        )) {
-            Text("\("menubar.tab.all".localized)(\(allCount))")
-                .tag(MenuBarTab.all)
-            Text("\("menubar.tab.issues".localized)(\(issuesCount))")
-                .tag(MenuBarTab.issues)
-            Text("\("menubar.tab.prs".localized)(\(prsCount))")
-                .tag(MenuBarTab.prs)
+        HStack(spacing: 8) {
+            Picker("", selection: Binding(
+                get: { selectedTab },
+                set: { selectedTab = $0 }
+            )) {
+                Text("\("menubar.tab.all".localized)(\(allCount))")
+                    .tag(MenuBarTab.all)
+                Text("\("menubar.tab.issues".localized)(\(issuesCount))")
+                    .tag(MenuBarTab.issues)
+                Text("\("menubar.tab.prs".localized)(\(prsCount))")
+                    .tag(MenuBarTab.prs)
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .controlSize(.small)
+
+            markAsReadButton
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .controlSize(.small)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
+    }
+
+    @ViewBuilder
+    private var markAsReadButton: some View {
+        Button(action: markFilteredNotificationsAsRead) {
+            if isMarkingAsRead {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 16, height: 16)
+            } else {
+                Image(systemName: "checkmark.circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(filteredNotifications.isEmpty ? .tertiary : .secondary)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(filteredNotifications.isEmpty || isMarkingAsRead)
+        .help(markAsReadButtonTitle)
+    }
+
+    private var markAsReadButtonTitle: String {
+        switch selectedTab {
+        case .all:
+            return "menubar.mark_all_read".localized
+        case .issues:
+            return "menubar.mark_issues_read".localized
+        case .prs:
+            return "menubar.mark_prs_read".localized
+        }
+    }
+
+    private func markFilteredNotificationsAsRead() {
+        guard !isMarkingAsRead else { return }
+
+        isMarkingAsRead = true
+
+        Task {
+            defer { isMarkingAsRead = false }
+
+            switch selectedTab {
+            case .all:
+                await notificationService.markAllAsRead()
+            case .issues, .prs:
+                for notification in filteredNotifications {
+                    await notificationService.markAsRead(notification: notification)
+                }
+            }
+        }
     }
 
     private var allCount: Int { notificationService.notifications.count }
