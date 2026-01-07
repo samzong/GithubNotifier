@@ -14,6 +14,12 @@
 
 "settings.startup.launch" = "登录时启动";
 
+/* Notification Settings */
+"settings.notifications.section" = "系统通知";
+"settings.notifications.enable" = "启用系统通知";
+"settings.notifications.test" = "发送测试通知";
+"settings.notifications.description" = "系统通知仅在后台自动刷新时显示。";
+
 /* Account Tab */
 "settings.token.title" = "个人令牌:";
 
@@ -27,7 +33,6 @@
 "menubar.error.title" = "错误";
 "menubar.retry" = "重试";
 "menubar.mark.all.read" = "全部标为已读";
-"menubar.smart.mark" = "智能标记";
 "menubar.open.in.browser" = "在浏览器中打开";
 "menubar.refresh" = "刷新";
 "menubar.preferences" = "偏好设置...";
@@ -38,11 +43,6 @@
 "menubar.tab.prs" = "PRs";
 "menubar.empty.issues" = "没有未读 Issues";
 "menubar.empty.prs" = "没有未读 PRs";
-
-/* Smart Mark Options */
-"filter.only.merged.prs" = "仅已合并的 PR";
-"filter.only.closed.issues" = "仅已关闭的 Issue";
-"filter.apply.smart.mark" = "应用智能标记";
 
 /* Notification Row */
 "notification.mark.as.read" = "标记为已读";
@@ -66,3 +66,37 @@
 "time.minutes.ago" = "%d 分钟前";
 "time.minutes.ago.plural" = "%d 分钟前";
 "time.just.now" = "刚刚";
+
+/* Notification Reasons */
+"notification.reason.assign" = "被分配";
+"notification.reason.author" = "作者";
+"notification.reason.comment" = "评论";
+"notification.reason.ci_activity" = "CI 活动";
+"notification.reason.invitation" = "邀请";
+"notification.reason.manual" = "手动";
+"notification.reason.mention" = "被提及";
+"notification.reason.review_requested" = "请求审查";
+"notification.reason.security_alert" = "安全警报";
+"notification.reason.state_change" = "状态变更";
+"notification.reason.subscribed" = "已订阅";
+"notification.reason.team_mention" = "团队被提及";
+
+/* PR States */
+"pr.state.open" = "开放";
+"pr.state.closed" = "关闭";
+"pr.state.merged" = "已合并";
+"pr.state.draft" = "草稿";
+
+/* Issue States */
+"issue.state.open" = "开放";
+"issue.state.closed_completed" = "已关闭（已完成）";
+"issue.state.closed_not_planned" = "已关闭（未计划）";
+
+/* Summary Notification */
+"notification.summary.title" = "更多 GitHub 通知";
+"notification.summary.body" = "您还有 %d 条未读通知";
+
+/* Test Notification */
+"notification.test.title" = "🎉 测试通知";
+"notification.test.subtitle" = "GitHubNotifier 工作正常！";
+"notification.test.body" = "点击可打开 GitHub 通知页面";

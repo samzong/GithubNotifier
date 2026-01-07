@@ -226,7 +226,6 @@ struct MenuBarView: View {
         }
     }
 
-
     private var tabPicker: some View {
         Picker("", selection: Binding(
             get: { selectedTab },

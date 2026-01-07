@@ -6,7 +6,6 @@ class NotificationService {
     var notifications: [GitHubNotification] = []
     var isLoading = false
     var errorMessage: String?
-    var filterOptions = FilterOptions()
 
     var unreadCount: Int { notifications.count }
 
@@ -14,6 +13,7 @@ class NotificationService {
     private var refreshTimer: Timer?
     private var prStateCache: [String: PRState] = [:]
     private var issueStateCache: [String: IssueState] = [:]
+    private var previousNotificationIds: Set<String> = []
 
     init(token: String? = nil) {
         if let token = token {
@@ -44,7 +44,7 @@ class NotificationService {
         issueStateCache = [:]
     }
 
-    func fetchNotifications() async {
+    func fetchNotifications(isAutoRefresh: Bool = false) async {
         guard let api = api else {
             errorMessage = "GitHub token not configured"
             return
@@ -55,6 +55,11 @@ class NotificationService {
 
         do {
             let fetchedNotifications = try await api.fetchNotifications()
+
+            if isAutoRefresh {
+                await detectAndNotifyNewNotifications(fetchedNotifications)
+            }
+
             notifications = fetchedNotifications
 
             await loadNotificationStates()
@@ -212,35 +217,11 @@ class NotificationService {
         }
     }
 
-    func smartMarkAsRead() async {
-        guard let api = api else { return }
-
-        var toMarkAsRead: [GitHubNotification] = []
-
-        for notification in notifications {
-            let prState = getPRState(for: notification)
-            let issueState = getIssueState(for: notification)
-
-            if filterOptions.shouldMarkAsRead(notification: notification, prState: prState, issueState: issueState) {
-                toMarkAsRead.append(notification)
-            }
-        }
-
-        for notification in toMarkAsRead {
-            do {
-                try await api.markNotificationAsRead(threadId: notification.id)
-                notifications.removeAll { $0.id == notification.id }
-            } catch {
-                errorMessage = error.localizedDescription
-            }
-        }
-    }
-
     func startAutoRefresh(interval: TimeInterval) {
         refreshTimer?.invalidate()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                await self?.fetchNotifications()
+                await self?.fetchNotifications(isAutoRefresh: true)
             }
         }
     }
@@ -248,6 +229,28 @@ class NotificationService {
     func stopAutoRefresh() {
         refreshTimer?.invalidate()
         refreshTimer = nil
+    }
+
+    private func detectAndNotifyNewNotifications(_ fetchedNotifications: [GitHubNotification]) async {
+        let currentIds = Set(fetchedNotifications.map { $0.id })
+
+        if previousNotificationIds.isEmpty {
+            previousNotificationIds = currentIds
+            return
+        }
+
+        let newIds = currentIds.subtracting(previousNotificationIds)
+
+        let newNotifications = fetchedNotifications.filter { notification in
+            newIds.contains(notification.id) &&
+            (notification.notificationType == .issue || notification.notificationType == .pullRequest)
+        }
+
+        if !newNotifications.isEmpty {
+            await NotificationManager.shared.sendNotifications(for: newNotifications)
+        }
+
+        previousNotificationIds = currentIds
     }
 
     nonisolated private func determinePRState(_ pr: PullRequest) -> PRState {

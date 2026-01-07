@@ -14,7 +14,18 @@ struct GitHubNotifierApp: App {
 
     init() {
         let token = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey)
-        _notificationService = State(initialValue: NotificationService(token: token))
+        let service = NotificationService(token: token)
+        _notificationService = State(initialValue: service)
+
+        Task { @MainActor in
+            NotificationManager.shared.notificationService = service
+        }
+
+        if UserDefaults.standard.bool(forKey: "enableSystemNotifications") {
+            Task {
+                await NotificationManager.shared.requestAuthorization()
+            }
+        }
     }
 
     var body: some Scene {
