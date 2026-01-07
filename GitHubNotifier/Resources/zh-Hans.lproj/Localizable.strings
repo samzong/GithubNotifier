@@ -43,6 +43,9 @@
 "menubar.tab.prs" = "PRs";
 "menubar.empty.issues" = "没有未读 Issues";
 "menubar.empty.prs" = "没有未读 PRs";
+"menubar.mark_all_read" = "全部已读";
+"menubar.mark_issues_read" = "Issues 已读";
+"menubar.mark_prs_read" = "PRs 已读";
 
 /* Notification Row */
 "notification.mark.as.read" = "标记为已读";

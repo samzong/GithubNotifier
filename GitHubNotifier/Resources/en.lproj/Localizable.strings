@@ -43,6 +43,9 @@
 "menubar.tab.prs" = "PRs";
 "menubar.empty.issues" = "No unread Issues";
 "menubar.empty.prs" = "No unread PRs";
+"menubar.mark_all_read" = "Mark All as Read";
+"menubar.mark_issues_read" = "Mark Issues as Read";
+"menubar.mark_prs_read" = "Mark PRs as Read";
 
 /* Notification Row */
 "notification.mark.as.read" = "Mark as read";
