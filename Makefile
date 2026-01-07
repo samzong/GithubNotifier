@@ -207,30 +207,24 @@ update-homebrew:
 		echo "❌ Error: GH_PAT environment variable is required"; \
 		exit 1; \
 	fi
-
 	@echo "==> Current version information:"
 	@echo "    - VERSION: $(VERSION)"
 	@echo "    - MARKETING_SEMVER: $(MARKETING_SEMVER)"
-
-	@echo "==> Preparing working directory..."
-	@rm -rf tmp && mkdir -p tmp
-
-	@echo "==> Downloading DMG files..."
-	@curl -L -o tmp/$(APP_NAME)-x86_64.dmg "https://github.com/samzong/$(APP_NAME)/releases/download/v$(MARKETING_SEMVER)/$(APP_NAME)-x86_64.dmg"
-	@curl -L -o tmp/$(APP_NAME)-arm64.dmg "https://github.com/samzong/$(APP_NAME)/releases/download/v$(MARKETING_SEMVER)/$(APP_NAME)-arm64.dmg"
-
-	@echo "==> Calculating SHA256 checksums..."
-	@X86_64_SHA256=$$(shasum -a 256 tmp/$(APP_NAME)-x86_64.dmg | cut -d ' ' -f 1) && echo "    - x86_64 SHA256: $$X86_64_SHA256"
-	@ARM64_SHA256=$$(shasum -a 256 tmp/$(APP_NAME)-arm64.dmg | cut -d ' ' -f 1) && echo "    - arm64 SHA256: $$ARM64_SHA256"
-
-	@echo "==> Cloning Homebrew tap repository..."
-	@cd tmp && git clone https://$(GH_PAT)@github.com/samzong/$(HOMEBREW_TAP_REPO).git
-	@cd tmp/$(HOMEBREW_TAP_REPO) && echo "    - Creating new branch: $(BRANCH_NAME)" && git checkout -b $(BRANCH_NAME)
-
-	@echo "==> Updating cask file..."
-	@cd tmp/$(HOMEBREW_TAP_REPO) && \
-	X86_64_SHA256=$$(shasum -a 256 ../$(APP_NAME)-x86_64.dmg | cut -d ' ' -f 1) && \
-	ARM64_SHA256=$$(shasum -a 256 ../$(APP_NAME)-arm64.dmg | cut -d ' ' -f 1) && \
+	@rm -rf tmp && mkdir -p tmp && \
+	echo "==> Downloading DMG files..." && \
+	curl -sfL -o tmp/$(APP_NAME)-x86_64.dmg "https://github.com/samzong/$(APP_NAME)/releases/download/v$(MARKETING_SEMVER)/$(APP_NAME)-x86_64.dmg" && \
+	curl -sfL -o tmp/$(APP_NAME)-arm64.dmg "https://github.com/samzong/$(APP_NAME)/releases/download/v$(MARKETING_SEMVER)/$(APP_NAME)-arm64.dmg" && \
+	echo "==> Calculating SHA256 checksums..." && \
+	X86_64_SHA256=$$(shasum -a 256 tmp/$(APP_NAME)-x86_64.dmg | cut -d ' ' -f 1) && \
+	ARM64_SHA256=$$(shasum -a 256 tmp/$(APP_NAME)-arm64.dmg | cut -d ' ' -f 1) && \
+	echo "    - x86_64 SHA256: $$X86_64_SHA256" && \
+	echo "    - arm64 SHA256: $$ARM64_SHA256" && \
+	echo "==> Cloning Homebrew tap repository..." && \
+	cd tmp && git clone https://$(GH_PAT)@github.com/samzong/$(HOMEBREW_TAP_REPO).git && \
+	cd $(HOMEBREW_TAP_REPO) && \
+	echo "    - Creating new branch: $(BRANCH_NAME)" && \
+	git checkout -b $(BRANCH_NAME) && \
+	echo "==> Updating cask file..." && \
 	if [ -f $(CASK_FILE) ]; then \
 		echo "    - Updating existing cask file with sed..."; \
 		echo "    - Updating version to $(MARKETING_SEMVER)"; \
@@ -247,10 +241,8 @@ update-homebrew:
 	else \
 		echo "❌ Error: Cask file not found. Please create it manually first."; \
 		exit 1; \
-	fi
-
-	@echo "==> Checking for changes..."
-	@cd tmp/$(HOMEBREW_TAP_REPO) && \
+	fi && \
+	echo "==> Checking for changes..." && \
 	if ! git diff --quiet $(CASK_FILE); then \
 		echo "    - Changes detected, creating pull request..."; \
 		git add $(CASK_FILE); \
@@ -270,7 +262,6 @@ update-homebrew:
 		echo "❌ No changes detected in cask file"; \
 		exit 1; \
 	fi
-
 	@echo "==> Cleaning up temporary files..."
 	@rm -rf tmp
 	@echo "✅ Homebrew cask update process completed"
