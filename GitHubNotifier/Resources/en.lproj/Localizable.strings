@@ -14,6 +14,12 @@
 
 "settings.startup.launch" = "Launch at login";
 
+/* Notification Settings */
+"settings.notifications.section" = "System Notifications";
+"settings.notifications.enable" = "Enable system notifications";
+"settings.notifications.test" = "Send Test Notification";
+"settings.notifications.description" = "System notifications will only appear during automatic background refresh.";
+
 /* Account Tab */
 "settings.token.title" = "Personal Token:";
 
@@ -27,7 +33,6 @@
 "menubar.error.title" = "Error";
 "menubar.retry" = "Retry";
 "menubar.mark.all.read" = "Mark All Read";
-"menubar.smart.mark" = "Smart Mark";
 "menubar.open.in.browser" = "Open in browser";
 "menubar.refresh" = "Refresh";
 "menubar.preferences" = "Preferences...";
@@ -38,11 +43,6 @@
 "menubar.tab.prs" = "PRs";
 "menubar.empty.issues" = "No unread Issues";
 "menubar.empty.prs" = "No unread PRs";
-
-/* Smart Mark Options */
-"filter.only.merged.prs" = "Only Merged PRs";
-"filter.only.closed.issues" = "Only Closed Issues";
-"filter.apply.smart.mark" = "Apply Smart Mark";
 
 /* Notification Row */
 "notification.mark.as.read" = "Mark as read";
@@ -66,3 +66,37 @@
 "time.minutes.ago" = "%d minute ago";
 "time.minutes.ago.plural" = "%d minutes ago";
 "time.just.now" = "Just now";
+
+/* Notification Reasons */
+"notification.reason.assign" = "Assigned";
+"notification.reason.author" = "Author";
+"notification.reason.comment" = "Comment";
+"notification.reason.ci_activity" = "CI Activity";
+"notification.reason.invitation" = "Invitation";
+"notification.reason.manual" = "Manual";
+"notification.reason.mention" = "Mentioned";
+"notification.reason.review_requested" = "Review Requested";
+"notification.reason.security_alert" = "Security Alert";
+"notification.reason.state_change" = "State Changed";
+"notification.reason.subscribed" = "Subscribed";
+"notification.reason.team_mention" = "Team Mentioned";
+
+/* PR States */
+"pr.state.open" = "Open";
+"pr.state.closed" = "Closed";
+"pr.state.merged" = "Merged";
+"pr.state.draft" = "Draft";
+
+/* Issue States */
+"issue.state.open" = "Open";
+"issue.state.closed_completed" = "Closed (Completed)";
+"issue.state.closed_not_planned" = "Closed (Not Planned)";
+
+/* Summary Notification */
+"notification.summary.title" = "More GitHub Notifications";
+"notification.summary.body" = "You have %d more unread notifications";
+
+/* Test Notification */
+"notification.test.title" = "🎉 Test Notification";
+"notification.test.subtitle" = "GitHubNotifier is working!";
+"notification.test.body" = "Click to open GitHub notifications";

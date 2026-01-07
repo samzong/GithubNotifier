@@ -4,10 +4,12 @@ import ServiceManagement
 struct SettingsView: View {
     @Environment(NotificationService.self) private var notificationService
     @AppStorage(UserPreferences.refreshIntervalKey) private var refreshInterval: Double = 60
-    @AppStorage(UserPreferences.launchAtLoginKey) private var launchAtLogin = false    
+    @AppStorage(UserPreferences.launchAtLoginKey) private var launchAtLogin = false
+    @AppStorage("enableSystemNotifications") private var enableSystemNotifications = false
     @State private var token = ""
     @State private var hasLoadedToken = false
-    @FocusState private var isTokenFocused: Bool    
+    @FocusState private var isTokenFocused: Bool
+    @State private var isTestingNotification = false
     private let settingsWidth: CGFloat = 480
     
     private let refreshOptions: [(seconds: Double, label: String)] = [
@@ -51,17 +53,46 @@ struct SettingsView: View {
                 .onChange(of: refreshInterval) { _, newValue in
                     notificationService.startAutoRefresh(interval: newValue)
                 }
-                
+
                 Toggle("settings.startup.launch".localized, isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, newValue in
                         setLaunchAtLogin(newValue)
                     }
             }
+
+            Section {
+                Toggle("settings.notifications.enable".localized, isOn: $enableSystemNotifications)
+                    .onChange(of: enableSystemNotifications) { _, newValue in
+                        if newValue {
+                            requestNotificationPermission()
+                        }
+                    }
+
+                if enableSystemNotifications {
+                    HStack {
+                        Button("settings.notifications.test".localized) {
+                            sendTestNotification()
+                        }
+                        .disabled(isTestingNotification)
+
+                        if isTestingNotification {
+                            ProgressView()
+                                .controlSize(.small)
+                                .padding(.leading, 4)
+                        }
+                    }
+
+                    Text("settings.notifications.description".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("settings.notifications.section".localized)
+            }
         }
         .formStyle(.grouped)
         .frame(width: settingsWidth)
     }
-    
     
     private var accountSettings: some View {
         Form {
@@ -126,6 +157,28 @@ struct SettingsView: View {
             }
         } catch {
             print("Failed to \(enabled ? "enable" : "disable") launch at login: \(error.localizedDescription)")
+        }
+    }
+
+    private func requestNotificationPermission() {
+        Task {
+            let granted = await NotificationManager.shared.requestAuthorization()
+            if !granted {
+                await MainActor.run {
+                    enableSystemNotifications = false
+                }
+            }
+        }
+    }
+
+    private func sendTestNotification() {
+        isTestingNotification = true
+        Task {
+            await NotificationManager.shared.sendTestNotification()
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            await MainActor.run {
+                isTestingNotification = false
+            }
         }
     }
 }
