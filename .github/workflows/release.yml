@@ -30,7 +30,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          brew install swiftformat
+          brew install swiftformat swiftlint
           brew install sparkle
 
       - name: Code Quality Check
