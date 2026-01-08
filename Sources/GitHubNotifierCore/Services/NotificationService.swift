@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 public class NotificationService {
     public var notifications: [GitHubNotification] = []
+    public var currentUser: GitHubGraphQLClient.ViewerInfo?
     public var isLoading = false
     public var errorMessage: String?
 
@@ -83,6 +84,15 @@ public class NotificationService {
         }
 
         isLoading = false
+    }
+
+    public func fetchCurrentUser() async {
+        guard let graphqlClient else { return }
+        do {
+            currentUser = try await graphqlClient.fetchViewer()
+        } catch {
+            print("Failed to fetch current user: \(error)")
+        }
     }
 
     private func loadNotificationDetails() async {

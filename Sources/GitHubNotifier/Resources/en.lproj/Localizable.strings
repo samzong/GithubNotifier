@@ -55,6 +55,14 @@
 "menubar.tab.all" = "All";
 "menubar.tab.issues" = "Issues";
 "menubar.tab.prs" = "PRs";
+"menubar.tab.notifications" = "Notifications";
+"menubar.tab.my_items" = "My Items";
+"menubar.my_items.empty" = "No items found";
+"menubar.filter.all" = "All";
+"menubar.filter.created" = "Created";
+"menubar.filter.assigned" = "Assigned";
+"menubar.filter.mentioned" = "Mentioned";
+"menubar.filter.review_requested" = "Review";
 "menubar.empty.issues" = "No unread Issues";
 "menubar.empty.prs" = "No unread PRs";
 "menubar.mark_all_read" = "Mark All as Read";

@@ -5,85 +5,471 @@ import SwiftUI
 
 struct MenuBarView: View {
     @Environment(NotificationService.self) private var notificationService
+    @Environment(MyItemsService.self) private var myItemsService
     @Environment(\.openSettings) private var openSettings
     @Environment(\.dismiss) private var dismiss
 
-    @AppStorage("menubar.selectedTab") private var selectedTabRawValue = MenuBarTab.all.rawValue
+    @AppStorage("menubar.selectedMainTab") private var selectedMainTabRawValue = MainTab.notifications.rawValue
+    @AppStorage("menubar.selectedSubTab") private var selectedSubTabRawValue = SubTab.all.rawValue
+    @AppStorage("menubar.selectedMyItemsFilter") private var selectedMyItemsFilterRawValue = MyItemsFilter.all.rawValue
 
     @State private var isMarkingAsRead = false
+    @State private var avatarImage: NSImage?
 
-    private var selectedTab: MenuBarTab {
-        get { MenuBarTab(rawValue: selectedTabRawValue) ?? .all }
-        nonmutating set { selectedTabRawValue = newValue.rawValue }
+    private var selectedMainTab: MainTab {
+        get { MainTab(rawValue: selectedMainTabRawValue) ?? .notifications }
+        nonmutating set { selectedMainTabRawValue = newValue.rawValue }
+    }
+
+    private var selectedSubTab: SubTab {
+        get { SubTab(rawValue: selectedSubTabRawValue) ?? .all }
+        nonmutating set { selectedSubTabRawValue = newValue.rawValue }
+    }
+
+    private var selectedMyItemsFilter: MyItemsFilter {
+        get { MyItemsFilter(rawValue: selectedMyItemsFilterRawValue) ?? .all }
+        nonmutating set { selectedMyItemsFilterRawValue = newValue.rawValue }
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header with title and external link icon
-            HStack {
-                Text("menubar.title".localized)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.primary)
+            // Header (fixed at top)
+            headerView
+            
+            Divider()
 
-                Spacer()
-
-                Button(action: {
-                    closeMenuBarWindow()
-                    openUnreadNotificationsInBrowser()
-                }) {
-                    Image(systemName: "arrow.up.forward.square")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("menubar.open.github.notifications".localized)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            subTabPicker
 
             Divider()
 
-            tabPicker
-
-            Divider()
-
-            notificationsSection
-
-            Divider()
-
-            // Footer menu
-            MenuRowButton(systemImage: "arrow.clockwise", title: "menubar.refresh".localized, shortcutHint: "⌘R") {
-                Task {
-                    await notificationService.fetchNotifications()
-                }
-            }
-            .keyboardShortcut("r", modifiers: .command)
-
-            Divider()
-
-            MenuRowButton(systemImage: "gearshape", title: "menubar.preferences".localized, shortcutHint: "⌘,") {
-                openSettingsAndBringToFront()
-            }
-            .keyboardShortcut(",", modifiers: .command)
-
-            Divider()
-
-            MenuRowButton(systemImage: "power", title: "menubar.quit".localized, shortcutHint: "⌘Q", role: .destructive) {
-                NSApplication.shared.terminate(nil)
-            }
-            .keyboardShortcut("q", modifiers: .command)
+            // Content fills remaining space
+            contentSection
+                .frame(maxHeight: .infinity, alignment: .top)
         }
-        .frame(width: 360)
-        .padding(.top, 6)
-        .padding(.bottom, 8)
+        .frame(width: 400, height: 600)
+        .background(Color(nsColor: .windowBackgroundColor))
         .task {
+            // Initial load using async context
             clearInitialFocus()
-            if notificationService.notifications.isEmpty {
-                await notificationService.fetchNotifications()
-            }
+            await initialLoad()
+        }
+        .onChange(of: selectedMainTab) { _, newValue in
+             Task { await refreshCurrentTab() }
+        }
+        .task(id: notificationService.currentUser?.avatarUrl) {
+            await loadAvatarImage(from: notificationService.currentUser?.avatarUrl)
         }
     }
 
+    // MARK: - Header
+    
+    private var headerView: some View {
+        HStack(spacing: 0) {
+            // Main Tabs
+            HStack(spacing: 8) {
+                mainTabButton(
+                    title: "menubar.tab.my_items".localized,
+                    icon: "list.bullet.rectangle",
+                    tab: .myItems
+                )
+                
+                mainTabButton(
+                    title: "menubar.tab.notifications".localized,
+                    icon: "bell",
+                    tab: .notifications,
+                    showDot: notificationService.unreadCount > 0
+                )
+            }
+            
+            Spacer()
+            
+            // Right Actions
+            HStack(spacing: 16) {
+                // Refresh Button
+                Button(action: {
+                    Task {
+                        await refreshCurrentTab()
+                    }
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(notificationService.isLoading || myItemsService.isLoading ? 360 : 0))
+                        .animation(
+                            (notificationService.isLoading || myItemsService.isLoading) ?
+                                Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default,
+                            value: notificationService.isLoading || myItemsService.isLoading
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("menubar.refresh".localized)
+                
+                Divider()
+                    .frame(height: 16)
+                
+                // Avatar Menu
+                Menu {
+                    if let login = notificationService.currentUser?.login {
+                        Text("Signed in as \(login)")
+                        Divider()
+                    }
+                    
+                    Button("menubar.open.github.notifications".localized) {
+                        closeMenuBarWindow()
+                        openUnreadNotificationsInBrowser()
+                    }
+
+                    Divider()
+
+                    Button("settings.title".localized) {
+                        openSettingsAndBringToFront()
+                    }
+                    
+                    Divider()
+                    
+                    Button("menubar.quit".localized) {
+                        NSApplication.shared.terminate(nil)
+                    }
+                } label: {
+                    if let avatarImage {
+                        Image(nsImage: avatarImage)
+                            .resizable()
+                            .renderingMode(.original)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 20, height: 20)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color.secondary.opacity(0.2), lineWidth: 1))
+                    } else {
+                        Image(systemName: "person.circle.fill")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .frame(width: 24, height: 24)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+    
+    private func mainTabButton(title: String, icon: String, tab: MainTab, showDot: Bool = false) -> some View {
+        let isSelected = selectedMainTab == tab
+        
+        return Button(action: { selectedMainTab = tab }) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                
+                Text(title)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                
+                if showDot {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 6, height: 6)
+                        .offset(y: -4)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+            .foregroundStyle(isSelected ? Color.accentColor : .primary)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Sub Tab Picker (All / Issues / PRs)
+
+    private var subTabPicker: some View {
+        VStack(spacing: 12) {
+            // Segmented Control Style
+            HStack(spacing: 0) {
+                subTabButton("menubar.tab.issues".localized, tab: .issues, count: currentIssuesCount, icon: "exclamationmark.circle")
+                
+                Divider()
+                    .frame(height: 16)
+                
+                subTabButton("menubar.tab.prs".localized, tab: .prs, count: currentPrsCount, icon: "arrow.triangle.pull")
+            }
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+
+            // GitHub-style filter for My Items (Below Sub Tabs)
+            if selectedMainTab == .myItems {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        filterButton("menubar.filter.assigned".localized, count: myItemsService.count(for: .assigned), filter: .assigned, color: .blue)
+                        filterButton("menubar.filter.created".localized, count: myItemsService.count(for: .created), filter: .created, color: .green)
+                        filterButton("menubar.filter.mentioned".localized, count: myItemsService.count(for: .mentioned), filter: .mentioned, color: .orange)
+                        
+                        if selectedSubTab != .issues {
+                             filterButton("menubar.filter.review_requested".localized, count: myItemsService.count(for: .reviewRequested), filter: .reviewRequested, color: .purple)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                }
+            } else {
+                // For Notifications tab, show "Mark as Read" or other controls if needed
+                if selectedMainTab == .notifications {
+                     HStack {
+                         Spacer()
+                         markAsReadButton
+                     }
+                     .padding(.horizontal, 16)
+                     .padding(.bottom, 8)
+                }
+            }
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+    
+    private func subTabButton(_ title: String, tab: SubTab, count: Int, icon: String) -> some View {
+        let isSelected = selectedSubTab == tab
+        return Button(action: {
+            if selectedSubTab == tab {
+                selectedSubTab = .all 
+            } else {
+                selectedSubTab = tab
+            }
+        }) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                Text(title)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color(nsColor: .windowBackgroundColor) : Color.clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(isSelected ? .primary : .secondary)
+    }
+
+    @ViewBuilder
+    private func filterButton(_ title: String, count: Int, filter: MyItemsFilter, color: Color) -> some View {
+        let isSelected = selectedMyItemsFilter == filter
+
+        Button(action: { 
+            if selectedMyItemsFilter == filter {
+                selectedMyItemsFilter = .all // Deselect to show all
+            } else {
+                selectedMyItemsFilter = filter
+            }
+        }) {
+            HStack(spacing: 4) {
+                Text(title)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                Text("\(count)")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.system(size: 11))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(isSelected ? color.opacity(0.15) : Color(nsColor: .controlBackgroundColor))
+            .foregroundStyle(isSelected ? color : .primary)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule().stroke(isSelected ? color : Color.secondary.opacity(0.2), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Content Section Router
+
+    @ViewBuilder private var contentSection: some View {
+        switch selectedMainTab {
+        case .notifications:
+            notificationsSection
+        case .myItems:
+            myItemsSection
+        }
+    }
+
+    // MARK: - My Items Section
+
+    @ViewBuilder private var myItemsSection: some View {
+        if myItemsService.isLoading && myItemsService.items.isEmpty {
+            MenuRowText("menubar.loading".localized)
+        } else if let error = myItemsService.errorMessage {
+            MenuRowText("\("menubar.error.title".localized): \(error)")
+
+            MenuRowButton(title: "menubar.retry".localized) {
+                Task {
+                    await myItemsService.fetchMyItems()
+                }
+            }
+        } else if filteredMyItems.isEmpty {
+            Text("menubar.my_items.empty".localized)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .italic()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(filteredMyItems.prefix(20))) { item in
+                        myItemRow(for: item)
+                    }
+                }
+            }
+            .frame(maxHeight: 420)
+        }
+    }
+
+    private func timeAgoString(from date: Date) -> String {
+        let seconds = -date.timeIntervalSinceNow
+        if seconds < 60 { return "now" }
+        let minutes = Int(seconds / 60)
+        if minutes < 60 { return "\(minutes)m" }
+        let hours = Int(minutes / 60)
+        if hours < 24 { return "\(hours)h" }
+        let days = Int(hours / 24)
+        if days < 30 { return "\(days)d" }
+        let months = Int(days / 30)
+        if months < 12 { return "\(months)mo" }
+        return "\(Int(months / 12))y"
+    }
+
+    @ViewBuilder
+    private func myItemRow(for item: SearchResultItem) -> some View {
+        Button(action: {
+            closeMenuBarWindow()
+            openMyItem(item)
+        }) {
+            HStack(alignment: .top, spacing: 8) {
+                // Avatar (Author)
+                let avatarString = item.authorAvatarUrl ?? "https://github.com/\(item.repositoryOwner).png"
+                KFImage(URL(string: avatarString))
+                    .resizable()
+                    .placeholder {
+                        Image(systemName: "person.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .fade(duration: 0.25)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                    .padding(.top, 2)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    // Repository name + Issue/PR number + time ago
+                    HStack(spacing: 4) {
+                        Text(item.repositoryName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.primary)
+
+                        Text("#\(String(item.number))")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(.secondary)
+
+                        Text("•")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+
+                        Text(timeAgoString(from: item.updatedAt))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+
+                        if let ciStatus = item.ciStatus {
+                             Text("•")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.tertiary)
+
+                             ciStatusIcon(for: ciStatus)
+                        }
+                    }
+
+                    // Title
+                    Text(item.title)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                // State icon
+                myItemIcon(for: item)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func myItemIcon(for item: SearchResultItem) -> some View {
+        let (iconName, color) = iconInfo(for: item)
+        Image(systemName: iconName)
+            .font(.system(size: 16))
+            .foregroundStyle(color)
+    }
+
+    private func iconInfo(for item: SearchResultItem) -> (String, Color) {
+        switch item.itemType {
+        case .pullRequest:
+            switch item.state.uppercased() {
+            case "MERGED":
+                return ("arrow.triangle.merge", .purple)
+            case "CLOSED":
+                return ("xmark.circle", .red)
+            default:
+                return ("arrow.triangle.pull", .green)
+            }
+        case .issue:
+            switch item.state.uppercased() {
+            case "CLOSED":
+                return ("checkmark.circle", .purple)
+            default:
+                return ("circle.dotted", .green)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func ciStatusIcon(for status: CIStatus) -> some View {
+        switch status.state {
+        case "SUCCESS":
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(.green)
+        case "FAILURE", "ERROR":
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(.red)
+        case "PENDING":
+             Image(systemName: "clock.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(.orange)
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Notifications Section (existing)
+    
     @ViewBuilder private var notificationsSection: some View {
         if notificationService.isLoading && notificationService.notifications.isEmpty {
             MenuRowText("menubar.loading".localized)
@@ -189,29 +575,6 @@ struct MenuBarView: View {
         IconHelper.notificationIcon(for: notification, prState: prState, issueState: issueState, size: 16)
     }
 
-    private var tabPicker: some View {
-        HStack(spacing: 8) {
-            Picker("", selection: Binding(
-                get: { selectedTab },
-                set: { selectedTab = $0 }
-            )) {
-                Text("\("menubar.tab.all".localized)(\(allCount))")
-                    .tag(MenuBarTab.all)
-                Text("\("menubar.tab.issues".localized)(\(issuesCount))")
-                    .tag(MenuBarTab.issues)
-                Text("\("menubar.tab.prs".localized)(\(prsCount))")
-                    .tag(MenuBarTab.prs)
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .controlSize(.small)
-
-            markAsReadButton
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-    }
-
     @ViewBuilder private var markAsReadButton: some View {
         Button(action: markFilteredNotificationsAsRead) {
             if isMarkingAsRead {
@@ -230,7 +593,7 @@ struct MenuBarView: View {
     }
 
     private var markAsReadButtonTitle: String {
-        switch selectedTab {
+        switch selectedSubTab {
         case .all:
             "menubar.mark_all_read".localized
         case .issues:
@@ -248,7 +611,7 @@ struct MenuBarView: View {
         Task {
             defer { isMarkingAsRead = false }
 
-            switch selectedTab {
+            switch selectedSubTab {
             case .all:
                 await notificationService.markAllAsRead()
             case .issues, .prs:
@@ -259,18 +622,48 @@ struct MenuBarView: View {
         }
     }
 
-    private var allCount: Int { notificationService.notifications.count }
+    // MARK: - Computed Properties for Current Tab
 
-    private var issuesCount: Int {
-        notificationService.notifications.count(where: { $0.notificationType == .issue })
+    private var currentAllCount: Int {
+        switch selectedMainTab {
+        case .notifications:
+            notificationService.notifications.count
+        case .myItems:
+            myItemsService.items(for: selectedMyItemsFilter).count
+        }
     }
 
-    private var prsCount: Int {
-        notificationService.notifications.count(where: { $0.notificationType == .pullRequest })
+    private var currentIssuesCount: Int {
+        switch selectedMainTab {
+        case .notifications:
+            notificationService.notifications.count(where: { $0.notificationType == .issue })
+        case .myItems:
+            myItemsService.issues(for: selectedMyItemsFilter).count
+        }
+    }
+
+    private var currentPrsCount: Int {
+        switch selectedMainTab {
+        case .notifications:
+            notificationService.notifications.count(where: { $0.notificationType == .pullRequest })
+        case .myItems:
+            myItemsService.pullRequests(for: selectedMyItemsFilter).count
+        }
+    }
+
+    private var filteredMyItems: [SearchResultItem] {
+        switch selectedSubTab {
+        case .all:
+            myItemsService.items(for: selectedMyItemsFilter)
+        case .issues:
+            myItemsService.issues(for: selectedMyItemsFilter)
+        case .prs:
+            myItemsService.pullRequests(for: selectedMyItemsFilter)
+        }
     }
 
     private var filteredNotifications: [GitHubNotification] {
-        switch selectedTab {
+        switch selectedSubTab {
         case .all:
             notificationService.notifications
         case .issues:
@@ -281,7 +674,7 @@ struct MenuBarView: View {
     }
 
     private var filteredGroupedNotifications: [NotificationGroup] {
-        switch selectedTab {
+        switch selectedSubTab {
         case .all:
             notificationService.groupedNotifications
         case .issues:
@@ -369,6 +762,21 @@ struct MenuBarView: View {
         }
     }
 
+    @MainActor
+    private func loadAvatarImage(from urlString: String?) async {
+        guard let urlString, let url = URL(string: urlString) else {
+            avatarImage = nil
+            return
+        }
+
+        do {
+            let result = try await KingfisherManager.shared.retrieveImage(with: url)
+            avatarImage = result.image
+        } catch {
+            avatarImage = nil
+        }
+    }
+
     private func openSettingsAndBringToFront() {
         closeMenuBarWindow()
         openSettings()
@@ -398,6 +806,34 @@ struct MenuBarView: View {
         }
     }
 
+    // MARK: - Helper Methods
+
+    private func initialLoad() async {
+        await notificationService.fetchCurrentUser()
+        if notificationService.notifications.isEmpty {
+            await notificationService.fetchNotifications()
+        }
+        if myItemsService.items.isEmpty {
+            await myItemsService.fetchMyItems()
+        }
+    }
+
+    private func refreshCurrentTab() async {
+        switch selectedMainTab {
+        case .notifications:
+            await notificationService.fetchNotifications()
+        case .myItems:
+            await myItemsService.fetchMyItems()
+        }
+    }
+
+    private func openMyItem(_ item: SearchResultItem) {
+        if let url = item.webURL {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @MainActor
     private func closeMenuBarWindow() {
         dismiss()
 
@@ -407,7 +843,12 @@ struct MenuBarView: View {
     }
 }
 
-private enum MenuBarTab: String, CaseIterable {
+private enum MainTab: String, CaseIterable {
+    case notifications
+    case myItems
+}
+
+private enum SubTab: String, CaseIterable {
     case all
     case issues
     case prs
