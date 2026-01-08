@@ -1,5 +1,6 @@
 import AppKit
 import GitHubNotifierCore
+import Kingfisher
 import SwiftUI
 
 struct MenuBarView: View {
@@ -125,6 +126,20 @@ struct MenuBarView: View {
             openNotification(notification)
         }) {
             HStack(alignment: .top, spacing: 8) {
+                // Avatar
+                let avatarUrl = URL(string: "https://github.com/\(notification.repository.owner.login).png")
+                KFImage(avatarUrl)
+                    .resizable()
+                    .placeholder {
+                        Image(systemName: "person.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .fade(duration: 0.25)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.primary.opacity(0.1), lineWidth: 1))
+
                 VStack(alignment: .leading, spacing: 2) {
                     // Repository name + time ago
                     HStack(spacing: 4) {

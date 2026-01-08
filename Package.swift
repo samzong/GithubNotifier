@@ -8,6 +8,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.8.1"),
+        .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
     ],
     targets: [
         .target(
@@ -23,6 +24,7 @@ let package = Package(
             dependencies: [
                 "GitHubNotifierCore",
                 .product(name: "Sparkle", package: "Sparkle"),
+                .product(name: "Kingfisher", package: "Kingfisher"),
             ],
             path: "Sources/GitHubNotifier",
             exclude: ["Info.plist"],
