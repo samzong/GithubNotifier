@@ -31,7 +31,12 @@ jobs:
       - name: Install Dependencies
         run: |
           brew install swiftformat swiftlint
-          brew install sparkle
+      - name: Install Sparkle Check
+        run: |
+          wget https://github.com/sparkle-project/Sparkle/releases/download/2.7.2/Sparkle-2.7.2.tar.xz
+          mkdir -p sparkle-cli
+          tar -xf Sparkle-2.7.2.tar.xz -C sparkle-cli
+          echo "$(pwd)/sparkle-cli/bin" >> $GITHUB_PATH
 
       - name: Code Quality Check
         run: make check
@@ -56,8 +61,8 @@ jobs:
           SPARKLE_ED_KEY: ${{ secrets.SPARKLE_ED_KEY }}
         run: |
           # Get sign_update tool path
-          SPARKLE_PATH=$(brew --prefix sparkle)
-          SIGN_UPDATE="${SPARKLE_PATH}/bin/sign_update"
+          # sign_update is now in the PATH, so we can use it directly
+          SIGN_UPDATE="sign_update"
           
           # Remove quarantine attribute if present
           xattr -cr "${SIGN_UPDATE}" 2>/dev/null || true
