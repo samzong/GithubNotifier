@@ -150,7 +150,6 @@ define package_dmg
 	@rm -rf $(BUILD_DIR)/tmp-$(1)
 	@mkdir -p $(BUILD_DIR)/tmp-$(1)
 	@cp -r ".build/$(1)-apple-macosx/release/$(APP_NAME).app" "$(BUILD_DIR)/tmp-$(1)/"
-	@codesign --force --deep --sign - "$(BUILD_DIR)/tmp-$(1)/$(APP_NAME).app"
 	@ln -s /Applications "$(BUILD_DIR)/tmp-$(1)/Applications"
 	hdiutil create -volname "$(DMG_VOLUME_NAME) ($(2))" \
 		-srcfolder "$(BUILD_DIR)/tmp-$(1)" \

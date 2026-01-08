@@ -68,7 +68,11 @@ SPARKLE_SRC=".build/${ARCH}-apple-macosx/${CONFIG}/Sparkle.framework"
 if [ -d "${SPARKLE_SRC}" ]; then
     echo "===> Copying Sparkle.framework..."
     mkdir -p "${BUNDLE}/Contents/Frameworks"
-    cp -R "${SPARKLE_SRC}" "${BUNDLE}/Contents/Frameworks/"
+    # Use -a to preserve links and attributes, avoiding ambiguous bundle format errors
+    cp -a "${SPARKLE_SRC}" "${BUNDLE}/Contents/Frameworks/"
+    
+    # Remove quarantine attribute if present to avoid verification issues
+    xattr -cr "${BUNDLE}/Contents/Frameworks/Sparkle.framework"
     
     # Fix rpath to find Sparkle in Frameworks folder
     echo "===> Fixing rpath for Sparkle..."
