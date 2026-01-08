@@ -48,37 +48,6 @@ public struct GitHubNotification: Codable, Identifiable, Sendable {
     }
 }
 
-public struct PullRequest: Codable, Sendable {
-    public let number: Int
-    public let state: String
-    public let title: String
-    public let body: String?
-    public let draft: Bool
-    public let merged: Bool
-    public let mergedAt: Date?
-    public let htmlUrl: String
-
-    enum CodingKeys: String, CodingKey {
-        case number, state, title, body, draft, merged
-        case mergedAt = "merged_at"
-        case htmlUrl = "html_url"
-    }
-}
-
-public struct Issue: Codable, Sendable {
-    public let number: Int
-    public let state: String
-    public let stateReason: String?
-    public let title: String
-    public let body: String?
-    public let htmlUrl: String
-
-    enum CodingKeys: String, CodingKey {
-        case number, state, title, body
-        case stateReason = "state_reason"
-        case htmlUrl = "html_url"
-    }
-}
 
 extension GitHubNotification {
     public var notificationType: NotificationType {

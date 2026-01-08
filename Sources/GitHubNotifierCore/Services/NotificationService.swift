@@ -9,15 +9,18 @@ public class NotificationService {
 
     public var unreadCount: Int { notifications.count }
 
-    private var api: GitHubAPI?
+    private var restClient: GitHubAPI?
+    private var graphqlClient: GitHubGraphQLClient?
     private var refreshTimer: Timer?
     private var prStateCache: [String: PRState] = [:]
     private var issueStateCache: [String: IssueState] = [:]
+    private var detailsCache: [String: NotificationDetails] = [:]
     private var previousNotificationIds: Set<String> = []
 
     public init(token: String? = nil) {
         if let token {
-            self.api = GitHubAPI(token: token)
+            self.restClient = GitHubAPI(token: token)
+            self.graphqlClient = GitHubGraphQLClient(token: token)
         }
         startAutoRefreshIfNeeded()
     }
@@ -32,20 +35,23 @@ public class NotificationService {
     }
 
     public func configure(token: String) {
-        self.api = GitHubAPI(token: token)
+        self.restClient = GitHubAPI(token: token)
+        self.graphqlClient = GitHubGraphQLClient(token: token)
     }
 
     public func clearToken() {
-        api = nil
+        restClient = nil
+        graphqlClient = nil
         notifications = []
         errorMessage = nil
         isLoading = false
         prStateCache = [:]
         issueStateCache = [:]
+        detailsCache = [:]
     }
 
     public func fetchNotifications(isAutoRefresh: Bool = false) async {
-        guard let api else {
+        guard let restClient else {
             errorMessage = "GitHub token not configured"
             return
         }
@@ -54,7 +60,7 @@ public class NotificationService {
         errorMessage = nil
 
         do {
-            let fetchedNotifications = try await api.fetchNotifications()
+            let fetchedNotifications = try await restClient.fetchNotifications()
 
             if isAutoRefresh {
                 await detectAndNotifyNewNotifications(fetchedNotifications)
@@ -62,7 +68,7 @@ public class NotificationService {
 
             notifications = fetchedNotifications
 
-            await loadNotificationStates()
+            await loadNotificationDetails()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -70,77 +76,58 @@ public class NotificationService {
         isLoading = false
     }
 
-    private func loadNotificationStates() async {
-        guard let api else { return }
+    private func loadNotificationDetails() async {
+        guard let graphqlClient else { return }
 
-        // Collect notifications that need state loading
-        var prRequests: [(cacheKey: String, owner: String, repo: String, number: Int)] = []
-        var issueRequests: [(cacheKey: String, owner: String, repo: String, number: Int)] = []
+        var requests: [(cacheKey: String, owner: String, repo: String, number: Int, type: NotificationSubjectType)] = []
 
         for notification in notifications {
             let owner = notification.repository.owner.login
             let repo = notification.repository.name
 
+            guard let number = notification.issueOrPRNumber else { continue }
+
+            let type: NotificationSubjectType
             switch notification.notificationType {
             case .pullRequest:
-                if let number = notification.issueOrPRNumber {
-                    let cacheKey = "\(owner)/\(repo)/pr/\(number)"
-                    if prStateCache[cacheKey] == nil {
-                        prRequests.append((cacheKey, owner, repo, number))
-                    }
+                type = .pullRequest
+                let cacheKey = "\(owner)/\(repo)/pr/\(number)"
+                if detailsCache[cacheKey] == nil {
+                    requests.append((cacheKey, owner, repo, number, type))
                 }
             case .issue:
-                if let number = notification.issueOrPRNumber {
-                    let cacheKey = "\(owner)/\(repo)/issue/\(number)"
-                    if issueStateCache[cacheKey] == nil {
-                        issueRequests.append((cacheKey, owner, repo, number))
-                    }
+                type = .issue
+                let cacheKey = "\(owner)/\(repo)/issue/\(number)"
+                if detailsCache[cacheKey] == nil {
+                    requests.append((cacheKey, owner, repo, number, type))
                 }
             default:
-                break
+                continue
             }
         }
 
-        // Fetch PR states concurrently
-        await withTaskGroup(of: (String, PRState?).self) { group in
-            for request in prRequests {
+        await withTaskGroup(of: (String, NotificationDetails?, NotificationSubjectType).self) { group in
+            for request in requests {
                 group.addTask {
-                    if let pr = try? await api.fetchPullRequest(
+                    let details = try? await graphqlClient.fetchNotificationDetails(
                         owner: request.owner,
                         repo: request.repo,
-                        number: request.number
-                    ) {
-                        return (request.cacheKey, self.determinePRState(pr))
+                        number: request.number,
+                        type: request.type
+                    )
+                    return (request.cacheKey, details, request.type)
+                }
+            }
+
+            for await (cacheKey, details, type) in group {
+                if let details {
+                    detailsCache[cacheKey] = details
+
+                    if type == .pullRequest {
+                        prStateCache[cacheKey] = determinePRStateFromGraphQL(details)
+                    } else {
+                        issueStateCache[cacheKey] = determineIssueStateFromGraphQL(details)
                     }
-                    return (request.cacheKey, nil)
-                }
-            }
-
-            for await (cacheKey, state) in group {
-                if let state {
-                    prStateCache[cacheKey] = state
-                }
-            }
-        }
-
-        // Fetch Issue states concurrently
-        await withTaskGroup(of: (String, IssueState?).self) { group in
-            for request in issueRequests {
-                group.addTask {
-                    if let issue = try? await api.fetchIssue(
-                        owner: request.owner,
-                        repo: request.repo,
-                        number: request.number
-                    ) {
-                        return (request.cacheKey, self.determineIssueState(issue))
-                    }
-                    return (request.cacheKey, nil)
-                }
-            }
-
-            for await (cacheKey, state) in group {
-                if let state {
-                    issueStateCache[cacheKey] = state
                 }
             }
         }
@@ -172,34 +159,22 @@ public class NotificationService {
         return issueStateCache[cacheKey]
     }
 
-    public func getNotificationBody(for notification: GitHubNotification) async -> String? {
-        guard let api else { return nil }
-
+    public func getNotificationDetails(for notification: GitHubNotification) -> NotificationDetails? {
         let owner = notification.repository.owner.login
         let repo = notification.repository.name
         guard let number = notification.issueOrPRNumber else { return nil }
 
-        do {
-            switch notification.notificationType {
-            case .pullRequest:
-                let pr = try await api.fetchPullRequest(owner: owner, repo: repo, number: number)
-                return pr.body
-            case .issue:
-                let issue = try await api.fetchIssue(owner: owner, repo: repo, number: number)
-                return issue.body
-            default:
-                return nil
-            }
-        } catch {
-            return nil
-        }
+        let prefix = notification.notificationType == .pullRequest ? "pr" : "issue"
+        let cacheKey = "\(owner)/\(repo)/\(prefix)/\(number)"
+
+        return detailsCache[cacheKey]
     }
 
     public func markAsRead(notification: GitHubNotification) async {
-        guard let api else { return }
+        guard let restClient else { return }
 
         do {
-            try await api.markNotificationAsRead(threadId: notification.id)
+            try await restClient.markNotificationAsRead(threadId: notification.id)
             notifications.removeAll { $0.id == notification.id }
         } catch {
             errorMessage = error.localizedDescription
@@ -207,10 +182,10 @@ public class NotificationService {
     }
 
     public func markAllAsRead() async {
-        guard let api else { return }
+        guard let restClient else { return }
 
         do {
-            try await api.markAllNotificationsAsRead()
+            try await restClient.markAllNotificationsAsRead()
             notifications.removeAll()
         } catch {
             errorMessage = error.localizedDescription
@@ -253,26 +228,24 @@ public class NotificationService {
         previousNotificationIds = currentIds
     }
 
-    private nonisolated func determinePRState(_ pr: PullRequest) -> PRState {
-        if pr.merged {
+    private nonisolated func determinePRStateFromGraphQL(_ details: NotificationDetails) -> PRState {
+        switch details.state.uppercased() {
+        case "MERGED":
             .merged
-        } else if pr.state == "closed" {
+        case "CLOSED":
             .closed
-        } else if pr.draft {
+        case "DRAFT":
             .draft
-        } else {
+        default:
             .open
         }
     }
 
-    private nonisolated func determineIssueState(_ issue: Issue) -> IssueState {
-        if issue.state == "closed" {
-            if issue.stateReason == "completed" {
-                .closedCompleted
-            } else {
-                .closedNotPlanned
-            }
-        } else {
+    private nonisolated func determineIssueStateFromGraphQL(_ details: NotificationDetails) -> IssueState {
+        switch details.state.uppercased() {
+        case "CLOSED":
+            .closedCompleted
+        default:
             .open
         }
     }

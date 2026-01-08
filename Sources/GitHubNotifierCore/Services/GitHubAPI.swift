@@ -2,31 +2,29 @@
 //  GitHubAPI.swift
 //  GitHubNotifier
 //
-//  Service layer for GitHub API interactions.
-//  Handles authentication, request formatting, and response parsing.
+//  REST API client for GitHub notifications management.
+//  For PR/Issue details, use GitHubGraphQLClient (richer data).
 //
 
 import Foundation
 
-/// Service class for interacting with the GitHub REST API.
+/// REST API client for GitHub notifications management.
 ///
-/// Provides methods for fetching notifications, marking them as read,
-/// and retrieving detailed information about pull requests and issues.
-/// Handles rate limiting, authentication errors, and network issues.
+/// Provides methods for fetching notifications and marking them as read.
+/// For detailed PR/Issue information (CI status, reviews), use GitHubGraphQLClient.
 public final class GitHubAPI: Sendable {
     private let baseURL = "https://api.github.com"
     private let token: String
     private let session: URLSession
 
     /// Configured JSON decoder for GitHub API responses.
-    /// Uses ISO8601 date decoding strategy to match GitHub's date format.
     private var jsonDecoder: JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }
 
-    /// Initializes a new GitHub API client.
+    /// Initializes a new GitHub REST API client.
     ///
     /// - Parameter token: GitHub personal access token for authentication
     public init(token: String) {
@@ -40,6 +38,8 @@ public final class GitHubAPI: Sendable {
         configuration.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: configuration)
     }
+
+    // MARK: - Notifications (REST only - not available via GraphQL)
 
     /// Fetches all notifications for the authenticated user.
     ///
@@ -69,46 +69,8 @@ public final class GitHubAPI: Sendable {
         _ = try await makeRequest(endpoint: endpoint, method: "PUT")
     }
 
-    /// Fetches detailed information about a specific pull request.
-    ///
-    /// - Parameters:
-    ///   - owner: The repository owner's username
-    ///   - repo: The repository name
-    ///   - number: The pull request number
-    /// - Returns: Detailed pull request information including state and metadata
-    /// - Throws: `APIError` if the request fails or response cannot be decoded
-    public func fetchPullRequest(owner: String, repo: String, number: Int) async throws -> PullRequest {
-        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/pulls/\(number)"
-        let data = try await makeRequest(endpoint: endpoint)
+    // MARK: - Private
 
-        return try jsonDecoder.decode(PullRequest.self, from: data)
-    }
-
-    /// Fetches detailed information about a specific issue.
-    ///
-    /// - Parameters:
-    ///   - owner: The repository owner's username
-    ///   - repo: The repository name
-    ///   - number: The issue number
-    /// - Returns: Detailed issue information including state and metadata
-    /// - Throws: `APIError` if the request fails or response cannot be decoded
-    public func fetchIssue(owner: String, repo: String, number: Int) async throws -> Issue {
-        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/issues/\(number)"
-        let data = try await makeRequest(endpoint: endpoint)
-
-        return try jsonDecoder.decode(Issue.self, from: data)
-    }
-
-    /// Makes an HTTP request to the GitHub API.
-    ///
-    /// Handles authentication, rate limiting, and common error cases.
-    ///
-    /// - Parameters:
-    ///   - endpoint: The full API endpoint URL
-    ///   - method: HTTP method (GET, POST, PATCH, PUT, DELETE). Defaults to GET
-    ///   - body: Optional request body data
-    /// - Returns: The response data
-    /// - Throws: `APIError` for various failure conditions
     private func makeRequest(endpoint: String, method: String = "GET", body: Data? = nil) async throws -> Data {
         guard let url = URL(string: endpoint) else {
             throw APIError.invalidURL
@@ -141,7 +103,6 @@ public final class GitHubAPI: Sendable {
                 let resetDate = Date(timeIntervalSince1970: resetTimestamp)
                 throw APIError.rateLimited(resetTime: resetDate)
             }
-            // Check if it's a rate limit error from response body
             if let remaining = httpResponse.value(forHTTPHeaderField: "X-RateLimit-Remaining"),
                remaining == "0" {
                 throw APIError.rateLimited(resetTime: nil)
@@ -163,22 +124,11 @@ public final class GitHubAPI: Sendable {
 
 /// Errors that can occur during GitHub API interactions.
 public enum APIError: Error, LocalizedError {
-    /// The provided endpoint URL is malformed
     case invalidURL
-
-    /// The server response is not a valid HTTP response
     case invalidResponse
-
-    /// The server returned an HTTP error status code
     case httpError(statusCode: Int)
-
-    /// Failed to decode the JSON response
     case decodingError(Error)
-
-    /// Authentication failed - invalid or expired token
     case unauthorized
-
-    /// Rate limit exceeded - includes optional reset time
     case rateLimited(resetTime: Date?)
 
     public var errorDescription: String? {
