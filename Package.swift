@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "GitHubNotifier",
     platforms: [
-        .macOS(.v14),
+        .macOS(.v15),
     ],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.8.1"),

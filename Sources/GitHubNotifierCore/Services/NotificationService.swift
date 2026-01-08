@@ -11,7 +11,9 @@ public class NotificationService {
 
     private var restClient: GitHubAPI?
     private var graphqlClient: GitHubGraphQLClient?
-    private var refreshTimer: Timer?
+    // nonisolated(unsafe) required for mutable properties accessed from deinit
+    private nonisolated(unsafe) var autoRefreshTask: Task<Void, Never>?
+    private nonisolated(unsafe) var initialFetchTask: Task<Void, Never>?
     private var prStateCache: [String: PRState] = [:]
     private var issueStateCache: [String: IssueState] = [:]
     private var detailsCache: [String: NotificationDetails] = [:]
@@ -25,12 +27,17 @@ public class NotificationService {
         startAutoRefreshIfNeeded()
     }
 
+    deinit {
+        autoRefreshTask?.cancel()
+        initialFetchTask?.cancel()
+    }
+
     private func startAutoRefreshIfNeeded() {
         let interval = UserDefaults.standard.double(forKey: UserPreferences.refreshIntervalKey)
         startAutoRefresh(interval: interval > 0 ? interval : 60)
 
-        Task {
-            await fetchNotifications()
+        initialFetchTask = Task { [weak self] in
+            await self?.fetchNotifications()
         }
     }
 
@@ -40,6 +47,8 @@ public class NotificationService {
     }
 
     public func clearToken() {
+        stopAutoRefresh()
+        initialFetchTask?.cancel()
         restClient = nil
         graphqlClient = nil
         notifications = []
@@ -193,17 +202,19 @@ public class NotificationService {
     }
 
     public func startAutoRefresh(interval: TimeInterval) {
-        refreshTimer?.invalidate()
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+        autoRefreshTask?.cancel()
+        autoRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(interval))
+                guard !Task.isCancelled else { break }
                 await self?.fetchNotifications(isAutoRefresh: true)
             }
         }
     }
 
     public func stopAutoRefresh() {
-        refreshTimer?.invalidate()
-        refreshTimer = nil
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
     }
 
     private func detectAndNotifyNewNotifications(_ fetchedNotifications: [GitHubNotification]) async {

@@ -100,7 +100,7 @@ jobs:
                 <pubDate>${PUB_DATE}</pubDate>
                 <sparkle:version>${{ env.SEMVER }}</sparkle:version>
                 <sparkle:shortVersionString>${{ env.SEMVER }}</sparkle:shortVersionString>
-                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
                 <enclosure
                   url="https://github.com/samzong/GitHubNotifier/releases/download/${{ env.VERSION }}/GitHubNotifier-x86_64.dmg"
                   type="application/octet-stream"
@@ -115,7 +115,7 @@ jobs:
                 <pubDate>${PUB_DATE}</pubDate>
                 <sparkle:version>${{ env.SEMVER }}</sparkle:version>
                 <sparkle:shortVersionString>${{ env.SEMVER }}</sparkle:shortVersionString>
-                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
                 <enclosure
                   url="https://github.com/samzong/GitHubNotifier/releases/download/${{ env.VERSION }}/GitHubNotifier-arm64.dmg"
                   type="application/octet-stream"

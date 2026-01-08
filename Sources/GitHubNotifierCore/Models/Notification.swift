@@ -48,7 +48,6 @@ public struct GitHubNotification: Codable, Identifiable, Sendable {
     }
 }
 
-
 extension GitHubNotification {
     public var notificationType: NotificationType {
         NotificationType.from(subject.type)

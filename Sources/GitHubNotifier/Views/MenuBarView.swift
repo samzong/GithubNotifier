@@ -335,7 +335,7 @@ struct MenuBarView: View {
     }
 
     private func clearInitialFocus() {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             NSApplication.shared.keyWindow?.makeFirstResponder(nil)
         }
     }
@@ -344,11 +344,9 @@ struct MenuBarView: View {
         closeMenuBarWindow()
         openSettings()
 
-        DispatchQueue.main.async {
+        Task { @MainActor in
             NSRunningApplication.current.activate()
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            try? await Task.sleep(for: .milliseconds(80))
             bringSettingsWindowToFront()
         }
     }
