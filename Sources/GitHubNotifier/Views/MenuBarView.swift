@@ -95,7 +95,7 @@ struct MenuBarView: View {
                     await notificationService.fetchNotifications()
                 }
             }
-        } else if notificationService.notifications.isEmpty || filteredNotifications.isEmpty {
+        } else if notificationService.notifications.isEmpty || filteredGroupedNotifications.isEmpty {
             // Show "All caught up!" message when no notifications
             Text("menubar.empty.subtitle".localized)
                 .font(.callout)
@@ -107,8 +107,8 @@ struct MenuBarView: View {
         } else {
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(Array(filteredNotifications.prefix(20))) { notification in
-                        notificationListItem(for: notification)
+                    ForEach(Array(filteredGroupedNotifications.prefix(20))) { group in
+                        notificationGroupItem(for: group)
                     }
                 }
             }
@@ -117,13 +117,14 @@ struct MenuBarView: View {
     }
 
     @ViewBuilder
-    private func notificationListItem(for notification: GitHubNotification) -> some View {
+    private func notificationGroupItem(for group: NotificationGroup) -> some View {
+        let notification = group.latestNotification
         let prState = notificationService.getPRState(for: notification)
         let issueState = notificationService.getIssueState(for: notification)
 
         Button(action: {
             closeMenuBarWindow()
-            openNotification(notification)
+            openNotificationGroup(group)
         }) {
             HStack(alignment: .top, spacing: 8) {
                 // Avatar
@@ -141,11 +142,17 @@ struct MenuBarView: View {
                     .overlay(Circle().stroke(Color.primary.opacity(0.1), lineWidth: 1))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    // Repository name + time ago
+                    // Repository name + Issue/PR number + time ago
                     HStack(spacing: 4) {
                         Text(notification.repository.name)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.primary)
+
+                        if let number = group.issueOrPRNumber {
+                            Text("#\(String(number))")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
 
                         Text("•")
                             .font(.system(size: 11))
@@ -273,9 +280,31 @@ struct MenuBarView: View {
         }
     }
 
+    private var filteredGroupedNotifications: [NotificationGroup] {
+        switch selectedTab {
+        case .all:
+            notificationService.groupedNotifications
+        case .issues:
+            notificationService.groupedNotifications.filter { $0.notificationType == .issue }
+        case .prs:
+            notificationService.groupedNotifications.filter { $0.notificationType == .pullRequest }
+        }
+    }
+
     private func openUnreadNotificationsInBrowser() {
         if let url = URL(string: "https://github.com/notifications?query=is%3Aunread") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func openNotificationGroup(_ group: NotificationGroup) {
+        let notification = group.latestNotification
+        if let url = webURL(for: notification) {
+            NSWorkspace.shared.open(url)
+
+            Task {
+                await notificationService.markGroupAsRead(group)
+            }
         }
     }
 

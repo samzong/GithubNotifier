@@ -190,6 +190,34 @@ public class NotificationService {
         }
     }
 
+    /// Group notifications by Issue/PR for display
+    public var groupedNotifications: [NotificationGroup] {
+        let groups = Dictionary(grouping: notifications) { notification -> String in
+            notification.groupKey ?? notification.id
+        }
+
+        return groups.map { key, notifications in
+            NotificationGroup(id: key, notifications: notifications)
+        }
+        .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    /// Mark all notifications in a group as read
+    public func markGroupAsRead(_ group: NotificationGroup) async {
+        guard let restClient else { return }
+
+        for notification in group.notifications {
+            do {
+                try await restClient.markNotificationAsRead(threadId: notification.id)
+            } catch {
+                // Continue marking others even if one fails
+            }
+        }
+
+        let groupIds = Set(group.notifications.map(\.id))
+        notifications.removeAll { groupIds.contains($0.id) }
+    }
+
     public func markAllAsRead() async {
         guard let restClient else { return }
 
