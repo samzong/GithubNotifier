@@ -58,7 +58,7 @@ clean:
 build:
 	@echo "🔨 Building $(APP_NAME) (debug)..."
 	swift build
-	./Scripts/package_app.sh debug
+	VERSION=$(VERSION) BUILD_NUMBER=$(BUILD_NUMBER) ./Scripts/package_app.sh debug
 	@echo "✅ Build completed!"
 	@echo "📍 Application: $(DEBUG_APP)"
 
@@ -141,7 +141,7 @@ version:
 define build_arch_release
 	@echo "===> Building $(1) architecture..."
 	swift build -c release --triple $(1)-apple-macosx
-	./Scripts/package_app.sh release $(1)
+	VERSION=$(VERSION) BUILD_NUMBER=$(BUILD_NUMBER) ./Scripts/package_app.sh release $(1)
 endef
 
 # Package DMG for specific architecture
