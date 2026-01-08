@@ -1,7 +1,9 @@
-import SwiftUI
 import ServiceManagement
+import Sparkle
+import SwiftUI
 
 struct SettingsView: View {
+    let updater: SPUUpdater
     @Environment(NotificationService.self) private var notificationService
     @AppStorage(UserPreferences.refreshIntervalKey) private var refreshInterval: Double = 60
     @AppStorage(UserPreferences.launchAtLoginKey) private var launchAtLogin = false
@@ -24,21 +26,21 @@ struct SettingsView: View {
         case newVersionAvailable
         case error(String)
     }
-    
+
     private let refreshOptions: [(seconds: Double, label: String)] = [
         (60, "settings.refresh.1min".localized),
         (120, "settings.refresh.2min".localized),
         (300, "settings.refresh.5min".localized),
-        (600, "settings.refresh.10min".localized)
+        (600, "settings.refresh.10min".localized),
     ]
-    
+
     var body: some View {
         TabView {
             generalSettings
                 .tabItem {
                     Label("settings.tab.general".localized, systemImage: "gearshape")
                 }
-            
+
             accountSettings
                 .tabItem {
                     Label("settings.tab.account".localized, systemImage: "person.crop.circle")
@@ -111,7 +113,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: settingsWidth)
     }
-    
+
     private var accountSettings: some View {
         Form {
             Section {
@@ -126,7 +128,7 @@ struct SettingsView: View {
                             saveTokenAutomatically(token)
                         }
                     }
-                
+
                 Link("settings.token.generate.link".localized, destination: URL(string: "https://github.com/settings/tokens/new")!)
                     .font(.caption)
                     .foregroundStyle(.link)
@@ -206,15 +208,8 @@ struct SettingsView: View {
 
                     Spacer()
 
-                    Button(action: checkForUpdates) {
-                        if isCheckingUpdate {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Text("about.check.update".localized)
-                        }
-                    }
-                    .disabled(isCheckingUpdate)
+                    // Sparkle update check button
+                    CheckForUpdatesView(updater: updater)
                 }
 
                 // Update check result feedback
@@ -229,7 +224,7 @@ struct SettingsView: View {
                     }
                     .font(.callout)
                 case .newVersionAvailable:
-                    if let latestVersion = latestVersion {
+                    if let latestVersion {
                         HStack {
                             Image(systemName: "sparkles")
                                 .foregroundStyle(.yellow)
@@ -245,7 +240,7 @@ struct SettingsView: View {
                         .font(.callout)
                         .foregroundStyle(.blue)
                     }
-                case .error(let message):
+                case let .error(message):
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
@@ -282,12 +277,11 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
     }
 
-
     private func compareVersions(_ v1: String, _ v2: String) -> Int {
         let parts1 = v1.replacingOccurrences(of: "v", with: "").split(separator: ".").compactMap { Int($0) }
         let parts2 = v2.replacingOccurrences(of: "v", with: "").split(separator: ".").compactMap { Int($0) }
 
-        for i in 0..<max(parts1.count, parts2.count) {
+        for i in 0 ..< max(parts1.count, parts2.count) {
             let p1 = i < parts1.count ? parts1[i] : 0
             let p2 = i < parts2.count ? parts2[i] : 0
             if p1 != p2 { return p1 > p2 ? 1 : -1 }
@@ -352,37 +346,37 @@ struct SettingsView: View {
             }
         }
     }
-    
+
     private func saveTokenAutomatically(_ newToken: String) {
         guard hasLoadedToken else { return }
-        
+
         let trimmedToken = newToken.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         if trimmedToken.isEmpty {
             clearToken()
             return
         }
-        
+
         // Only save if it's different from what's potentially already saved (optimization)
         let currentSaved = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey)
         if currentSaved == trimmedToken {
             return
         }
-        
+
         guard KeychainHelper.shared.save(trimmedToken, forKey: UserPreferences.tokenKeychainKey) else { return }
-        
+
         notificationService.configure(token: trimmedToken)
         Task {
             await notificationService.fetchNotifications()
         }
     }
-    
+
     private func clearToken() {
         token = ""
         _ = KeychainHelper.shared.delete(forKey: UserPreferences.tokenKeychainKey)
         notificationService.clearToken()
     }
-    
+
     private func setLaunchAtLogin(_ enabled: Bool) {
         do {
             if enabled {

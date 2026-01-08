@@ -5,9 +5,9 @@
 //  Created on 2026-01-07.
 //
 
+import AppKit
 import Foundation
 import UserNotifications
-import AppKit
 
 @MainActor
 class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
@@ -16,7 +16,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     private let notificationCenter = UNUserNotificationCenter.current()
     weak var notificationService: NotificationService?
 
-    private override init() {
+    override private init() {
         super.init()
         notificationCenter.delegate = self
     }
@@ -216,31 +216,31 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     private func formatReason(_ reason: String) -> String {
         switch reason {
         case "assign":
-            return NSLocalizedString("notification.reason.assign", comment: "")
+            NSLocalizedString("notification.reason.assign", comment: "")
         case "author":
-            return NSLocalizedString("notification.reason.author", comment: "")
+            NSLocalizedString("notification.reason.author", comment: "")
         case "comment":
-            return NSLocalizedString("notification.reason.comment", comment: "")
+            NSLocalizedString("notification.reason.comment", comment: "")
         case "ci_activity":
-            return NSLocalizedString("notification.reason.ci_activity", comment: "")
+            NSLocalizedString("notification.reason.ci_activity", comment: "")
         case "invitation":
-            return NSLocalizedString("notification.reason.invitation", comment: "")
+            NSLocalizedString("notification.reason.invitation", comment: "")
         case "manual":
-            return NSLocalizedString("notification.reason.manual", comment: "")
+            NSLocalizedString("notification.reason.manual", comment: "")
         case "mention":
-            return NSLocalizedString("notification.reason.mention", comment: "")
+            NSLocalizedString("notification.reason.mention", comment: "")
         case "review_requested":
-            return NSLocalizedString("notification.reason.review_requested", comment: "")
+            NSLocalizedString("notification.reason.review_requested", comment: "")
         case "security_alert":
-            return NSLocalizedString("notification.reason.security_alert", comment: "")
+            NSLocalizedString("notification.reason.security_alert", comment: "")
         case "state_change":
-            return NSLocalizedString("notification.reason.state_change", comment: "")
+            NSLocalizedString("notification.reason.state_change", comment: "")
         case "subscribed":
-            return NSLocalizedString("notification.reason.subscribed", comment: "")
+            NSLocalizedString("notification.reason.subscribed", comment: "")
         case "team_mention":
-            return NSLocalizedString("notification.reason.team_mention", comment: "")
+            NSLocalizedString("notification.reason.team_mention", comment: "")
         default:
-            return reason.capitalized
+            reason.capitalized
         }
     }
 }

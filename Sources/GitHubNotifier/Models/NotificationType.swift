@@ -18,57 +18,57 @@ enum NotificationType: String, CaseIterable {
     var displayName: String {
         switch self {
         case .pullRequest:
-            return "Pull Request"
+            "Pull Request"
         case .issue:
-            return "Issue"
+            "Issue"
         case .commit:
-            return "Commit"
+            "Commit"
         case .release:
-            return "Release"
+            "Release"
         case .discussion:
-            return "Discussion"
+            "Discussion"
         case .checkSuite:
-            return "Check Suite"
+            "Check Suite"
         case .repositoryInvitation:
-            return "Repository Invitation"
+            "Repository Invitation"
         case .repositoryVulnerabilityAlert:
-            return "Vulnerability Alert"
+            "Vulnerability Alert"
         case .unknown:
-            return "Unknown"
+            "Unknown"
         }
     }
 
     var icon: String {
         switch self {
         case .pullRequest:
-            return "arrow.triangle.pull"
+            "arrow.triangle.pull"
         case .issue:
-            return "exclamationmark.circle"
+            "exclamationmark.circle"
         case .commit:
-            return "arrow.triangle.branch"
+            "arrow.triangle.branch"
         case .release:
-            return "tag"
+            "tag"
         case .discussion:
-            return "bubble.left.and.bubble.right"
+            "bubble.left.and.bubble.right"
         case .checkSuite:
-            return "checkmark.circle"
+            "checkmark.circle"
         case .repositoryInvitation:
-            return "envelope"
+            "envelope"
         case .repositoryVulnerabilityAlert:
-            return "shield.lefthalf.filled.trianglebadge.exclamationmark"
+            "shield.lefthalf.filled.trianglebadge.exclamationmark"
         case .unknown:
-            return "questionmark.circle"
+            "questionmark.circle"
         }
     }
 
     var iconAssetName: String? {
         switch self {
         case .pullRequest:
-            return "PullRequestOpen"
+            "PullRequestOpen"
         case .issue:
-            return "IssueOpen"
+            "IssueOpen"
         default:
-            return nil
+            nil
         }
     }
 }
@@ -82,39 +82,39 @@ enum PRState {
     var color: Color {
         switch self {
         case .open:
-            return .green
+            .green
         case .closed:
-            return .red
+            .red
         case .merged:
-            return .purple
+            .purple
         case .draft:
-            return .gray
+            .gray
         }
     }
 
     var icon: String {
         switch self {
         case .open:
-            return "arrow.triangle.pull"
+            "arrow.triangle.pull"
         case .closed:
-            return "xmark.circle"
+            "xmark.circle"
         case .merged:
-            return "arrow.triangle.merge"
+            "arrow.triangle.merge"
         case .draft:
-            return "doc.text"
+            "doc.text"
         }
     }
 
     var iconAssetName: String {
         switch self {
         case .open:
-            return "PullRequestOpen"
+            "PullRequestOpen"
         case .closed:
-            return "PullRequestClosed"
+            "PullRequestClosed"
         case .merged:
-            return "PullRequestMerged"
+            "PullRequestMerged"
         case .draft:
-            return "PullRequestDraft"
+            "PullRequestDraft"
         }
     }
 }
@@ -127,33 +127,33 @@ enum IssueState {
     var color: Color {
         switch self {
         case .open:
-            return .green
+            .green
         case .closedCompleted:
-            return .purple
+            .purple
         case .closedNotPlanned:
-            return .gray
+            .gray
         }
     }
 
     var icon: String {
         switch self {
         case .open:
-            return "exclamationmark.circle"
+            "exclamationmark.circle"
         case .closedCompleted:
-            return "checkmark.circle"
+            "checkmark.circle"
         case .closedNotPlanned:
-            return "xmark.circle"
+            "xmark.circle"
         }
     }
 
     var iconAssetName: String {
         switch self {
         case .open:
-            return "IssueOpen"
+            "IssueOpen"
         case .closedCompleted:
-            return "IssueClosed"
+            "IssueClosed"
         case .closedNotPlanned:
-            return "IssueNotPlanned"
+            "IssueNotPlanned"
         }
     }
 }

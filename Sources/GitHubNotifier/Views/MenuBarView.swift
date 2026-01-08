@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct MenuBarView: View {
     @Environment(NotificationService.self) private var notificationService
@@ -82,8 +82,7 @@ struct MenuBarView: View {
         }
     }
 
-    @ViewBuilder
-    private var notificationsSection: some View {
+    @ViewBuilder private var notificationsSection: some View {
         if notificationService.isLoading && notificationService.notifications.isEmpty {
             MenuRowText("menubar.loading".localized)
         } else if let error = notificationService.errorMessage {
@@ -119,7 +118,7 @@ struct MenuBarView: View {
     private func notificationListItem(for notification: GitHubNotification) -> some View {
         let prState = notificationService.getPRState(for: notification)
         let issueState = notificationService.getIssueState(for: notification)
-        
+
         Button(action: {
             closeMenuBarWindow()
             openNotification(notification)
@@ -161,7 +160,7 @@ struct MenuBarView: View {
         }
         .buttonStyle(.plain)
     }
-    
+
     @ViewBuilder
     private func notificationIcon(for notification: GitHubNotification, prState: PRState?, issueState: IssueState?) -> some View {
         IconHelper.notificationIcon(for: notification, prState: prState, issueState: issueState, size: 16)
@@ -190,8 +189,7 @@ struct MenuBarView: View {
         .padding(.vertical, 8)
     }
 
-    @ViewBuilder
-    private var markAsReadButton: some View {
+    @ViewBuilder private var markAsReadButton: some View {
         Button(action: markFilteredNotificationsAsRead) {
             if isMarkingAsRead {
                 ProgressView()
@@ -211,11 +209,11 @@ struct MenuBarView: View {
     private var markAsReadButtonTitle: String {
         switch selectedTab {
         case .all:
-            return "menubar.mark_all_read".localized
+            "menubar.mark_all_read".localized
         case .issues:
-            return "menubar.mark_issues_read".localized
+            "menubar.mark_issues_read".localized
         case .prs:
-            return "menubar.mark_prs_read".localized
+            "menubar.mark_prs_read".localized
         }
     }
 
@@ -251,14 +249,13 @@ struct MenuBarView: View {
     private var filteredNotifications: [GitHubNotification] {
         switch selectedTab {
         case .all:
-            return notificationService.notifications
+            notificationService.notifications
         case .issues:
-            return notificationService.notifications.filter { $0.notificationType == .issue }
+            notificationService.notifications.filter { $0.notificationType == .issue }
         case .prs:
-            return notificationService.notifications.filter { $0.notificationType == .pullRequest }
+            notificationService.notifications.filter { $0.notificationType == .pullRequest }
         }
     }
-
 
     private func openUnreadNotificationsInBrowser() {
         if let url = URL(string: "https://github.com/notifications?query=is%3Aunread") {
@@ -275,7 +272,6 @@ struct MenuBarView: View {
             }
         }
     }
-
 
     private func webURL(for notification: GitHubNotification) -> URL? {
         guard let apiURLString = notification.subject.url,
@@ -312,7 +308,7 @@ struct MenuBarView: View {
 
             let mapping: [String: String] = [
                 "pulls": "pull",
-                "commits": "commit"
+                "commits": "commit",
             ]
             let mappedResource = mapping[resource] ?? resource
             let path = ([owner, repo, mappedResource] + Array(rest.dropFirst(1))).joined(separator: "/")
@@ -321,8 +317,6 @@ struct MenuBarView: View {
 
         return URL(string: "https://github.com/\(owner)/\(repo)")
     }
-
-
 
     private func clearInitialFocus() {
         DispatchQueue.main.async {
@@ -464,13 +458,12 @@ private struct MenuRowButton: View {
         .onHover { isHovered = $0 }
     }
 
-    @ViewBuilder
-    private var iconView: some View {
+    @ViewBuilder private var iconView: some View {
         switch leadingIcon {
-        case .system(let systemName):
+        case let .system(systemName):
             Image(systemName: systemName)
                 .foregroundStyle(.secondary)
-        case .nsImage(let image):
+        case let .nsImage(image):
             if image.isTemplate {
                 Image(nsImage: image)
                     .renderingMode(.template)

@@ -1,21 +1,33 @@
 # Disabled rules
+# Note: Some rules disabled to avoid conflicts with SwiftFormat
 disabled_rules:
-  - trailing_whitespace
+  - trailing_whitespace      # SwiftFormat handles
   - force_cast
   - cyclomatic_complexity
   - file_header
   - nesting
   - multiple_closures_with_trailing_closure
+  - opening_brace            # SwiftFormat handles
+  - statement_position       # SwiftFormat handles
+  - comma                    # SwiftFormat handles
+  - colon                    # SwiftFormat handles
+  - trailing_comma           # SwiftFormat adds trailing commas
+  - large_tuple              # Needed for batch requests
 
 # Identifier name exceptions
 identifier_name:
   excluded:
     - pr
     - id
+    - i
+    - v1
+    - v2
+    - p1
+    - p2
 
 # Included paths
 included:
-  - GitHubNotifier
+  - Sources
 
 # Excluded paths
 excluded:

@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    name: Create Release
+    name: Build and Release
     runs-on: macos-latest
     permissions:
       contents: write
@@ -23,16 +23,109 @@ jobs:
 
       - name: Get version from tag
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "SEMVER=${VERSION#v}" >> $GITHUB_ENV
 
-      - name: Build Packages
+      - name: Install Dependencies
+        run: |
+          brew install swiftformat
+          brew install sparkle
+
+      - name: Code Quality Check
+        run: make check
+
+      - name: Build DMG Packages
         run: |
           make VERSION=${{ env.VERSION }} dmg
 
-      - name: Verify Architecture Support
+      - name: Verify DMG Files
         run: |
-          echo "==> Checking release version architecture compatibility..."
-          make check-arch
+          echo "===> Checking DMG files..."
+          ls -lh .build/*.dmg
+          
+          echo "===> Verifying x86_64 DMG..."
+          hdiutil verify .build/GitHubNotifier-x86_64.dmg
+          
+          echo "===> Verifying arm64 DMG..."
+          hdiutil verify .build/GitHubNotifier-arm64.dmg
+
+      - name: Sign DMGs with Sparkle
+        env:
+          SPARKLE_ED_KEY: ${{ secrets.SPARKLE_ED_KEY }}
+        run: |
+          # Get sign_update tool path
+          SPARKLE_PATH=$(brew --prefix sparkle)
+          SIGN_UPDATE="${SPARKLE_PATH}/bin/sign_update"
+          
+          # Remove quarantine attribute if present
+          xattr -cr "${SIGN_UPDATE}" 2>/dev/null || true
+          
+          echo "===> Signing x86_64 DMG..."
+          X86_SIG=$("${SIGN_UPDATE}" .build/GitHubNotifier-x86_64.dmg --ed-key-file <(echo "$SPARKLE_ED_KEY"))
+          echo "X86_SIG=${X86_SIG}" >> $GITHUB_ENV
+          
+          echo "===> Signing arm64 DMG..."
+          ARM_SIG=$("${SIGN_UPDATE}" .build/GitHubNotifier-arm64.dmg --ed-key-file <(echo "$SPARKLE_ED_KEY"))
+          echo "ARM_SIG=${ARM_SIG}" >> $GITHUB_ENV
+
+      - name: Generate Appcast
+        run: |
+          # DMG file sizes
+          X86_SIZE=$(stat -f%z .build/GitHubNotifier-x86_64.dmg)
+          ARM_SIZE=$(stat -f%z .build/GitHubNotifier-arm64.dmg)
+          
+          # Current date in RFC 2822 format
+          PUB_DATE=$(date -R)
+          
+          # Generate appcast.xml
+          cat > .build/appcast.xml << EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <channel>
+              <title>GitHubNotifier Updates</title>
+              <link>https://github.com/samzong/GitHubNotifier</link>
+              <description>Most recent changes with links to updates.</description>
+              <language>en</language>
+              
+              <!-- Intel (x86_64) -->
+              <item>
+                <title>Version ${{ env.SEMVER }}</title>
+                <pubDate>${PUB_DATE}</pubDate>
+                <sparkle:version>${{ env.SEMVER }}</sparkle:version>
+                <sparkle:shortVersionString>${{ env.SEMVER }}</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure
+                  url="https://github.com/samzong/GitHubNotifier/releases/download/${{ env.VERSION }}/GitHubNotifier-x86_64.dmg"
+                  type="application/octet-stream"
+                  sparkle:os="macos"
+                  length="${X86_SIZE}"
+                  ${X86_SIG}
+                />
+              </item>
+              
+              <!-- Apple Silicon (arm64) -->
+              <item>
+                <title>Version ${{ env.SEMVER }}</title>
+                <pubDate>${PUB_DATE}</pubDate>
+                <sparkle:version>${{ env.SEMVER }}</sparkle:version>
+                <sparkle:shortVersionString>${{ env.SEMVER }}</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure
+                  url="https://github.com/samzong/GitHubNotifier/releases/download/${{ env.VERSION }}/GitHubNotifier-arm64.dmg"
+                  type="application/octet-stream"
+                  sparkle:os="macos"
+                  length="${ARM_SIZE}"
+                  ${ARM_SIG}
+                />
+              </item>
+            </channel>
+          </rss>
+          EOF
+          
+          echo "===> Generated appcast.xml:"
+          cat .build/appcast.xml
 
       - name: Generate Release Notes
         id: release_notes
@@ -56,8 +149,9 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            build/GitHubNotifier-x86_64.dmg
-            build/GitHubNotifier-arm64.dmg
+            .build/GitHubNotifier-x86_64.dmg
+            .build/GitHubNotifier-arm64.dmg
+            .build/appcast.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

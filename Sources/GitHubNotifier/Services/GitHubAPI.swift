@@ -123,7 +123,7 @@ class GitHubAPI {
         request.addValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.addValue("no-cache", forHTTPHeaderField: "Pragma")
 
-        if let body = body {
+        if let body {
             request.httpBody = body
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         }
@@ -153,7 +153,7 @@ class GitHubAPI {
             throw APIError.unauthorized
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard (200 ... 299).contains(httpResponse.statusCode) else {
             throw APIError.httpError(statusCode: httpResponse.statusCode)
         }
 
@@ -187,14 +187,14 @@ enum APIError: Error, LocalizedError {
             return "Invalid URL"
         case .invalidResponse:
             return "Invalid response from server"
-        case .httpError(let statusCode):
+        case let .httpError(statusCode):
             return "HTTP error: \(statusCode)"
-        case .decodingError(let error):
+        case let .decodingError(error):
             return "Failed to decode response: \(error.localizedDescription)"
         case .unauthorized:
             return "Unauthorized. Please check your GitHub token."
-        case .rateLimited(let resetTime):
-            if let resetTime = resetTime {
+        case let .rateLimited(resetTime):
+            if let resetTime {
                 let formatter = RelativeDateTimeFormatter()
                 formatter.unitsStyle = .full
                 let relativeTime = formatter.localizedString(for: resetTime, relativeTo: Date())

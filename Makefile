@@ -1,14 +1,15 @@
-.PHONY: clean build install-app dmg update-homebrew check-arch help
+.PHONY: clean build build-release install-app dmg lint lint-fix format format-check version help
 
 # Variables
 APP_NAME = GitHubNotifier
-BUILD_DIR = build
+BUILD_DIR = .build
 PROJECT_DIR := $(shell pwd)
+HOST_ARCH := $(shell uname -m)
 
 # Install variables
-CONFIGURATION = Release
-BUILT_APP_PATH = $(BUILD_DIR)/$(CONFIGURATION)/$(APP_NAME).app
 USER_APPLICATIONS = $(HOME)/Applications
+DEBUG_APP = $(BUILD_DIR)/$(HOST_ARCH)-apple-macosx/debug/$(APP_NAME).app
+RELEASE_APP = $(BUILD_DIR)/$(HOST_ARCH)-apple-macosx/release/$(APP_NAME).app
 INSTALL_PATH = $(USER_APPLICATIONS)/$(APP_NAME).app
 
 # Version information
@@ -36,43 +37,41 @@ endif
 # Architecture related variables
 ARCHES := x86_64 arm64
 DMG_VOLUME_NAME = "$(APP_NAME)"
-
 DMG_LABEL_x86_64 = Intel
 DMG_LABEL_arm64 = Apple Silicon
-
-archive_path = $(BUILD_DIR)/$(APP_NAME)-$(1).xcarchive
-dmg_path = $(BUILD_DIR)/$(APP_NAME)-$(1).dmg
 
 # Homebrew related variables
 HOMEBREW_TAP_REPO = homebrew-tap
 CASK_FILE = Casks/github-notifier.rb
 BRANCH_NAME = update-github-notifier-$(MARKETING_SEMVER)
 
+# ============================================================================
+# Build Targets
+# ============================================================================
+
 # Clean build artifacts
 clean:
+	swift package clean
 	rm -rf $(BUILD_DIR)
-	xcodebuild clean -scheme $(APP_NAME) 2>/dev/null || true
 
-# Build for local development (current architecture)
+# Build for development (debug, current architecture)
 build:
-	@echo "🔨 Building $(APP_NAME)..."
-	@mkdir -p $(BUILD_DIR)
-	xcodebuild \
-		-scheme $(APP_NAME) \
-		-configuration $(CONFIGURATION) \
-		-destination 'platform=macOS' \
-		build \
-		SYMROOT=$(BUILD_DIR) \
-		CODE_SIGN_STYLE=Manual \
-		CODE_SIGN_IDENTITY="-" \
-		DEVELOPMENT_TEAM="" \
-		CURRENT_PROJECT_VERSION=$(BUILD_NUMBER) \
-		MARKETING_VERSION=$(MARKETING_SEMVER)
+	@echo "🔨 Building $(APP_NAME) (debug)..."
+	swift build
+	./Scripts/package_app.sh debug
 	@echo "✅ Build completed!"
-	@echo "📍 Application: $(BUILT_APP_PATH)"
+	@echo "📍 Application: $(DEBUG_APP)"
+
+# Build for release
+build-release:
+	@echo "🔨 Building $(APP_NAME) (release)..."
+	swift build -c release
+	./Scripts/package_app.sh release
+	@echo "✅ Build completed!"
+	@echo "📍 Application: $(RELEASE_APP)"
 
 # Install app to ~/Applications and launch it
-install-app:
+install-app: build-release
 	@echo "⏹️  Stopping any running $(APP_NAME) instances..."
 	@if pgrep -x "$(APP_NAME)" >/dev/null 2>&1; then \
 		pkill -KILL -x "$(APP_NAME)" >/dev/null 2>&1; \
@@ -80,30 +79,52 @@ install-app:
 	else \
 		echo "ℹ️  $(APP_NAME) is not running."; \
 	fi
-	@$(MAKE) --no-print-directory build
 	@echo "📦 Installing $(APP_NAME) to ~/Applications..."
 	@mkdir -p "$(USER_APPLICATIONS)"
 	@if [ -d "$(INSTALL_PATH)" ]; then \
 		echo "⚠️  Removing old version..."; \
 		rm -rf "$(INSTALL_PATH)"; \
 	fi
-	@if [ -d "$(BUILT_APP_PATH)" ]; then \
-		cp -R "$(BUILT_APP_PATH)" "$(USER_APPLICATIONS)/"; \
+	@if [ -d "$(RELEASE_APP)" ]; then \
+		cp -R "$(RELEASE_APP)" "$(USER_APPLICATIONS)/"; \
 		echo "✅ $(APP_NAME) installed!"; \
 		echo "🚀 Launching $(APP_NAME)..."; \
 		open "$(INSTALL_PATH)"; \
 	else \
-		echo "❌ Error: $(BUILT_APP_PATH) not found"; \
+		echo "❌ Error: $(RELEASE_APP) not found"; \
 		exit 1; \
 	fi
 
+# Quick run for development
+run:
+	./Scripts/compile_and_run.sh debug
+
+# ============================================================================
+# Code Quality
+# ============================================================================
+
 # Run swiftlint
 lint:
-	swiftlint
+	swiftlint Sources
 
 # Run swiftlint with auto-fix
 lint-fix:
-	swiftlint --fix
+	swiftlint --fix Sources
+
+# Format code with SwiftFormat
+format:
+	swiftformat Sources --config .swiftformat
+
+# Check formatting (for CI)
+format-check:
+	swiftformat Sources --config .swiftformat --lint
+
+# Run all checks
+check: format-check lint
+
+# ============================================================================
+# Version & Info
+# ============================================================================
 
 # Show version information
 version:
@@ -112,119 +133,76 @@ version:
 	@echo "Marketing:    $(MARKETING_SEMVER)"
 	@echo "Build Number: $(BUILD_NUMBER)"
 
-# Build archive for specific architecture
-define build_archive_for_arch
-	@echo "==> Building $(1) architecture application..."
-	xcodebuild clean archive \
-		-project $(APP_NAME).xcodeproj \
-		-scheme $(APP_NAME) \
-		-configuration Release \
-		-archivePath $(2) \
-		CODE_SIGN_STYLE=Manual \
-		CODE_SIGN_IDENTITY="-" \
-		DEVELOPMENT_TEAM="" \
-		CURRENT_PROJECT_VERSION=$(BUILD_NUMBER) \
-		MARKETING_VERSION=$(MARKETING_SEMVER) \
-		ARCHS="$(1)" \
-		OTHER_CODE_SIGN_FLAGS="--options=runtime"
+# ============================================================================
+# DMG Packaging (for release)
+# ============================================================================
+
+# Build release for specific architecture
+define build_arch_release
+	@echo "===> Building $(1) architecture..."
+	swift build -c release --triple $(1)-apple-macosx
+	./Scripts/package_app.sh release $(1)
 endef
 
 # Package DMG for specific architecture
-define package_dmg_for_arch
-	xcodebuild -exportArchive \
-		-archivePath $(2) \
-		-exportPath $(BUILD_DIR)/$(1) \
-		-exportOptionsPlist $(PROJECT_DIR)/exportOptions.plist
-
-	rm -rf $(BUILD_DIR)/tmp-$(1)
-	mkdir -p $(BUILD_DIR)/tmp-$(1)
-
-	cp -r "$(BUILD_DIR)/$(1)/$(APP_NAME).app" "$(BUILD_DIR)/tmp-$(1)/"
-
-	@echo "==> Self-signing $(1) application..."
-	codesign --force --deep --sign - "$(BUILD_DIR)/tmp-$(1)/$(APP_NAME).app"
-
-	ln -s /Applications "$(BUILD_DIR)/tmp-$(1)/Applications"
-
-	hdiutil create -volname "$(DMG_VOLUME_NAME) ($(3))" \
+define package_dmg
+	@echo "===> Creating DMG for $(1)..."
+	@rm -rf $(BUILD_DIR)/tmp-$(1)
+	@mkdir -p $(BUILD_DIR)/tmp-$(1)
+	@cp -r ".build/$(1)-apple-macosx/release/$(APP_NAME).app" "$(BUILD_DIR)/tmp-$(1)/"
+	@codesign --force --deep --sign - "$(BUILD_DIR)/tmp-$(1)/$(APP_NAME).app"
+	@ln -s /Applications "$(BUILD_DIR)/tmp-$(1)/Applications"
+	hdiutil create -volname "$(DMG_VOLUME_NAME) ($(2))" \
 		-srcfolder "$(BUILD_DIR)/tmp-$(1)" \
 		-ov -format UDZO \
-		"$(4)"
-
-	rm -rf $(BUILD_DIR)/tmp-$(1) $(BUILD_DIR)/$(1)
+		"$(BUILD_DIR)/$(APP_NAME)-$(1).dmg"
+	@rm -rf $(BUILD_DIR)/tmp-$(1)
+	@echo "✅ Created $(BUILD_DIR)/$(APP_NAME)-$(1).dmg"
 endef
 
-# Echo DMG line
-define echo_dmg_line
-	@echo "    - $(1) version: $(call dmg_path,$(1))"
-endef
-
-# Build for specific architectures
-define build_target_template
-.PHONY: build-$(1)
-build-$(1):
-	$(call build_archive_for_arch,$(1),$(call archive_path,$(1)))
-endef
-$(foreach arch,$(ARCHES),$(eval $(call build_target_template,$(arch))))
-
-# Package DMG for specific architectures
-define package_target_template
-.PHONY: package-$(1)
-package-$(1): build-$(1)
-	$(call package_dmg_for_arch,$(1),$(call archive_path,$(1)),$(DMG_LABEL_$(1)),$(call dmg_path,$(1)))
-endef
-$(foreach arch,$(ARCHES),$(eval $(call package_target_template,$(arch))))
-
-# Create DMG (builds all defined architectures)
-dmg: $(foreach arch,$(ARCHES),package-$(arch))
-	@$(MAKE) --no-print-directory check-arch
-	@echo "==> All DMG files have been created:"
-	$(foreach arch,$(ARCHES),$(call echo_dmg_line,$(arch)))
+# Build DMGs for both architectures
+dmg:
+	$(call build_arch_release,x86_64)
+	$(call package_dmg,x86_64,$(DMG_LABEL_x86_64))
+	swift package clean
+	$(call build_arch_release,arm64)
+	$(call package_dmg,arm64,$(DMG_LABEL_arm64))
 	@echo ""
-	@echo "Note: These DMGs are self-signed; users may need to approve them in System Settings."
+	@echo "===> All DMG files created:"
+	@echo "    - x86_64 (Intel): $(BUILD_DIR)/$(APP_NAME)-x86_64.dmg"
+	@echo "    - arm64 (Apple Silicon): $(BUILD_DIR)/$(APP_NAME)-arm64.dmg"
+	@echo ""
+	@echo "Note: These DMGs are self-signed; users may need to approve them."
 
-# Check architecture compatibility
-check-arch:
-	@echo "==> Checking application architecture compatibility..."
-	@for arch in $(ARCHES); do \
-		BINARY="$(call archive_path,$$arch)/Products/Applications/$(APP_NAME).app/Contents/MacOS/$(APP_NAME)"; \
-		if [ -f "$$BINARY" ]; then \
-			echo "==> Checking $$arch version architecture:"; \
-			lipo -info "$$BINARY"; \
-			if lipo -info "$$BINARY" | grep -q "$$arch"; then \
-				echo "✅ $$arch version supports $$arch architecture"; \
-			else \
-				echo "❌ $$arch version does not support $$arch architecture"; \
-				exit 1; \
-			fi; \
-		fi; \
-	done
+# ============================================================================
+# Homebrew
+# ============================================================================
 
 # Update Homebrew Cask
 update-homebrew:
-	@echo "==> Starting Homebrew cask update process..."
+	@echo "===> Starting Homebrew cask update process..."
 	@if [ -z "$(GH_PAT)" ]; then \
 		echo "❌ Error: GH_PAT environment variable is required"; \
 		exit 1; \
 	fi
-	@echo "==> Current version information:"
+	@echo "===> Current version information:"
 	@echo "    - VERSION: $(VERSION)"
 	@echo "    - MARKETING_SEMVER: $(MARKETING_SEMVER)"
 	@rm -rf tmp && mkdir -p tmp && \
-	echo "==> Downloading DMG files..." && \
+	echo "===> Downloading DMG files..." && \
 	curl -sfL -o tmp/$(APP_NAME)-x86_64.dmg "https://github.com/samzong/$(APP_NAME)/releases/download/v$(MARKETING_SEMVER)/$(APP_NAME)-x86_64.dmg" && \
 	curl -sfL -o tmp/$(APP_NAME)-arm64.dmg "https://github.com/samzong/$(APP_NAME)/releases/download/v$(MARKETING_SEMVER)/$(APP_NAME)-arm64.dmg" && \
-	echo "==> Calculating SHA256 checksums..." && \
+	echo "===> Calculating SHA256 checksums..." && \
 	X86_64_SHA256=$$(shasum -a 256 tmp/$(APP_NAME)-x86_64.dmg | cut -d ' ' -f 1) && \
 	ARM64_SHA256=$$(shasum -a 256 tmp/$(APP_NAME)-arm64.dmg | cut -d ' ' -f 1) && \
 	echo "    - x86_64 SHA256: $$X86_64_SHA256" && \
 	echo "    - arm64 SHA256: $$ARM64_SHA256" && \
-	echo "==> Cloning Homebrew tap repository..." && \
+	echo "===> Cloning Homebrew tap repository..." && \
 	cd tmp && git clone https://$(GH_PAT)@github.com/samzong/$(HOMEBREW_TAP_REPO).git && \
 	cd $(HOMEBREW_TAP_REPO) && \
 	echo "    - Creating new branch: $(BRANCH_NAME)" && \
 	git checkout -b $(BRANCH_NAME) && \
-	echo "==> Updating cask file..." && \
+	echo "===> Updating cask file..." && \
 	if [ -f $(CASK_FILE) ]; then \
 		echo "    - Updating existing cask file with sed..."; \
 		echo "    - Updating version to $(MARKETING_SEMVER)"; \
@@ -242,7 +220,7 @@ update-homebrew:
 		echo "❌ Error: Cask file not found. Please create it manually first."; \
 		exit 1; \
 	fi && \
-	echo "==> Checking for changes..." && \
+	echo "===> Checking for changes..." && \
 	if ! git diff --quiet $(CASK_FILE); then \
 		echo "    - Changes detected, creating pull request..."; \
 		git add $(CASK_FILE); \
@@ -262,26 +240,39 @@ update-homebrew:
 		echo "❌ No changes detected in cask file"; \
 		exit 1; \
 	fi
-	@echo "==> Cleaning up temporary files..."
+	@echo "===> Cleaning up temporary files..."
 	@rm -rf tmp
 	@echo "✅ Homebrew cask update process completed"
 
-# Help command
+# ============================================================================
+# Help
+# ============================================================================
+
 help:
-	@echo "$(APP_NAME) build targets:"
-	@echo "  make build           Build app for the current architecture"
-	@echo "  make install-app     Build, install to ~/Applications, and launch"
-	@echo "  make dmg             Produce self-signed DMGs for x86_64 and arm64"
-	@echo "  make check-arch      Confirm archive slices for each architecture"
-	@echo "  make lint            Run swiftlint"
-	@echo "  make lint-fix        Run swiftlint with auto-fix"
-	@echo "  make version         Print version info"
-	@echo "  make clean           Remove build artifacts"
-	@echo "  make update-homebrew GH_PAT=token  Update Homebrew cask"
-	@echo "  make build-<arch>    Build single-arch archives (arches: $(ARCHES))"
+	@echo "$(APP_NAME) build targets (SPM-based):"
 	@echo ""
-	@echo "Override MARKETING_SEMVER/BUILD_NUMBER when needed, e.g. MARKETING_SEMVER=1.0.0 make build"
+	@echo "  Development:"
+	@echo "    make build          Build debug version"
+	@echo "    make run            Build, package, and launch (debug)"
+	@echo "    make install-app    Build release and install to ~/Applications"
 	@echo ""
-	@echo "All DMGs are self-signed; users may need to allow them manually."
+	@echo "  Code Quality:"
+	@echo "    make format         Format code with SwiftFormat"
+	@echo "    make format-check   Check formatting (for CI)"
+	@echo "    make lint           Run SwiftLint"
+	@echo "    make lint-fix       Run SwiftLint with auto-fix"
+	@echo "    make check          Run all checks"
+	@echo ""
+	@echo "  Release:"
+	@echo "    make build-release  Build release version"
+	@echo "    make dmg            Create DMGs for x86_64 and arm64"
+	@echo "    make version        Print version info"
+	@echo ""
+	@echo "  Other:"
+	@echo "    make clean          Remove build artifacts"
+	@echo "    make update-homebrew GH_PAT=token  Update Homebrew cask"
+	@echo ""
+	@echo "Override MARKETING_SEMVER/BUILD_NUMBER when needed:"
+	@echo "  MARKETING_SEMVER=1.0.0 make build-release"
 
 .DEFAULT_GOAL := help

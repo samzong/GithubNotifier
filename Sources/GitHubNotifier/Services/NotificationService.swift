@@ -16,7 +16,7 @@ class NotificationService {
     private var previousNotificationIds: Set<String> = []
 
     init(token: String? = nil) {
-        if let token = token {
+        if let token {
             self.api = GitHubAPI(token: token)
         }
         startAutoRefreshIfNeeded()
@@ -45,7 +45,7 @@ class NotificationService {
     }
 
     func fetchNotifications(isAutoRefresh: Bool = false) async {
-        guard let api = api else {
+        guard let api else {
             errorMessage = "GitHub token not configured"
             return
         }
@@ -71,7 +71,7 @@ class NotificationService {
     }
 
     private func loadNotificationStates() async {
-        guard let api = api else { return }
+        guard let api else { return }
 
         // Collect notifications that need state loading
         var prRequests: [(cacheKey: String, owner: String, repo: String, number: Int)] = []
@@ -117,7 +117,7 @@ class NotificationService {
             }
 
             for await (cacheKey, state) in group {
-                if let state = state {
+                if let state {
                     prStateCache[cacheKey] = state
                 }
             }
@@ -139,7 +139,7 @@ class NotificationService {
             }
 
             for await (cacheKey, state) in group {
-                if let state = state {
+                if let state {
                     issueStateCache[cacheKey] = state
                 }
             }
@@ -173,7 +173,7 @@ class NotificationService {
     }
 
     func getNotificationBody(for notification: GitHubNotification) async -> String? {
-        guard let api = api else { return nil }
+        guard let api else { return nil }
 
         let owner = notification.repository.owner.login
         let repo = notification.repository.name
@@ -196,7 +196,7 @@ class NotificationService {
     }
 
     func markAsRead(notification: GitHubNotification) async {
-        guard let api = api else { return }
+        guard let api else { return }
 
         do {
             try await api.markNotificationAsRead(threadId: notification.id)
@@ -207,7 +207,7 @@ class NotificationService {
     }
 
     func markAllAsRead() async {
-        guard let api = api else { return }
+        guard let api else { return }
 
         do {
             try await api.markAllNotificationsAsRead()
@@ -232,7 +232,7 @@ class NotificationService {
     }
 
     private func detectAndNotifyNewNotifications(_ fetchedNotifications: [GitHubNotification]) async {
-        let currentIds = Set(fetchedNotifications.map { $0.id })
+        let currentIds = Set(fetchedNotifications.map(\.id))
 
         if previousNotificationIds.isEmpty {
             previousNotificationIds = currentIds
@@ -243,7 +243,7 @@ class NotificationService {
 
         let newNotifications = fetchedNotifications.filter { notification in
             newIds.contains(notification.id) &&
-            (notification.notificationType == .issue || notification.notificationType == .pullRequest)
+                (notification.notificationType == .issue || notification.notificationType == .pullRequest)
         }
 
         if !newNotifications.isEmpty {
@@ -253,27 +253,27 @@ class NotificationService {
         previousNotificationIds = currentIds
     }
 
-    nonisolated private func determinePRState(_ pr: PullRequest) -> PRState {
+    private nonisolated func determinePRState(_ pr: PullRequest) -> PRState {
         if pr.merged {
-            return .merged
+            .merged
         } else if pr.state == "closed" {
-            return .closed
+            .closed
         } else if pr.draft {
-            return .draft
+            .draft
         } else {
-            return .open
+            .open
         }
     }
 
-    nonisolated private func determineIssueState(_ issue: Issue) -> IssueState {
+    private nonisolated func determineIssueState(_ issue: Issue) -> IssueState {
         if issue.state == "closed" {
             if issue.stateReason == "completed" {
-                return .closedCompleted
+                .closedCompleted
             } else {
-                return .closedNotPlanned
+                .closedNotPlanned
             }
         } else {
-            return .open
+            .open
         }
     }
 }

@@ -5,14 +5,25 @@
 //  Created by X on 1/6/26.
 //
 
-import SwiftUI
 import AppKit
+import Sparkle
+import SwiftUI
 
 @main
 struct GitHubNotifierApp: App {
     @State private var notificationService: NotificationService
 
+    /// Sparkle updater controller for automatic updates
+    private let updaterController: SPUStandardUpdaterController
+
     init() {
+        // Initialize Sparkle updater
+        updaterController = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil
+        )
+
         let token = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey)
         let service = NotificationService(token: token)
         _notificationService = State(initialValue: service)
@@ -38,7 +49,7 @@ struct GitHubNotifierApp: App {
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView()
+            SettingsView(updater: updaterController.updater)
                 .environment(notificationService)
         }
     }
@@ -52,7 +63,7 @@ struct MenuBarLabel: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(nsImage: menuBarIcon)
-            if unreadCount > 0 && showCount {
+            if unreadCount > 0, showCount {
                 Text("\(unreadCount)")
                     .font(.caption)
                     .fontWeight(.semibold)

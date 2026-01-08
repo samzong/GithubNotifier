@@ -9,7 +9,7 @@
 import AppKit
 import SwiftUI
 
-struct IconHelper {
+enum IconHelper {
     /// Creates a template icon from the asset catalog.
     ///
     /// - Parameters:

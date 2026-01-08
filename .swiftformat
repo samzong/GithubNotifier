@@ -1,0 +1,60 @@
+# SwiftFormat configuration for GitHubNotifier
+# https://github.com/nicklockwood/SwiftFormat
+
+--swiftversion 5.10
+
+# Indentation
+--indent 4
+--tabwidth 4
+--smarttabs enabled
+--indentcase false
+--ifdef no-indent
+--xcodeindentation enabled
+
+# Line wrapping
+--maxwidth 140
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--wrapreturntype preserve
+--wrapconditions preserve
+--wrapternary default
+--wraptypealiases preserve
+
+# Spacing
+--operatorfunc spaced
+--ranges spaced
+--typeattributes prev-line
+--varattributes same-line
+--storedvarattrs same-line
+--computedvarattrs same-line
+
+# Braces
+--allman false
+--elseposition same-line
+--guardelse auto
+
+# Organization
+--self remove
+--selfrequired 
+--importgrouping alpha
+--extensionacl on-declarations
+--patternlet hoist
+
+# Stripping
+--stripunusedargs closure-only
+--trimwhitespace always
+
+# Other
+--semicolons never
+--commas always
+--decimalgrouping 3
+--exponentcase lowercase
+--hexliteralcase lowercase
+--hexgrouping none
+--fractiongrouping disabled
+--exponentgrouping disabled
+
+# Rules to disable (conflicts with SwiftLint or personal preference)
+--disable redundantSelf
+--disable wrapMultilineStatementBraces
