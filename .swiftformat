@@ -1,7 +1,7 @@
 # SwiftFormat configuration for GitHubNotifier
 # https://github.com/nicklockwood/SwiftFormat
 
---swiftversion 5.10
+--swiftversion 6.0
 
 # Indentation
 --indent 4

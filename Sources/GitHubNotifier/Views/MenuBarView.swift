@@ -239,11 +239,11 @@ struct MenuBarView: View {
     private var allCount: Int { notificationService.notifications.count }
 
     private var issuesCount: Int {
-        notificationService.notifications.filter { $0.notificationType == .issue }.count
+        notificationService.notifications.count(where: { $0.notificationType == .issue })
     }
 
     private var prsCount: Int {
-        notificationService.notifications.filter { $0.notificationType == .pullRequest }.count
+        notificationService.notifications.count(where: { $0.notificationType == .pullRequest })
     }
 
     private var filteredNotifications: [GitHubNotification] {
@@ -329,7 +329,7 @@ struct MenuBarView: View {
         openSettings()
 
         DispatchQueue.main.async {
-            _ = NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+            NSRunningApplication.current.activate()
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {

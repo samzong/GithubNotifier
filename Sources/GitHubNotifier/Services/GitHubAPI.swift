@@ -13,9 +13,9 @@ import Foundation
 /// Provides methods for fetching notifications, marking them as read,
 /// and retrieving detailed information about pull requests and issues.
 /// Handles rate limiting, authentication errors, and network issues.
-class GitHubAPI {
+final class GitHubAPI: Sendable {
     private let baseURL = "https://api.github.com"
-    private var token: String
+    private let token: String
     private let session: URLSession
 
     /// Configured JSON decoder for GitHub API responses.

@@ -1,4 +1,4 @@
-// swift-tools-version: 5.10
+// swift-tools-version: 6.0
 import PackageDescription
 
 let package = Package(
@@ -21,9 +21,6 @@ let package = Package(
                 .process("Resources/Assets.xcassets"),
                 .copy("Resources/en.lproj"),
                 .copy("Resources/zh-Hans.lproj"),
-            ],
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
             ],
             linkerSettings: [
                 .unsafeFlags([

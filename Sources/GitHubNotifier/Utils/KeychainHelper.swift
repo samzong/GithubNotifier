@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 final class KeychainHelper: Sendable {
-    nonisolated(unsafe) static let shared = KeychainHelper()
+    static let shared = KeychainHelper()
 
     private init() {}
 

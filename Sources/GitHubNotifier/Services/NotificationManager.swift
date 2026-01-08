@@ -7,7 +7,7 @@
 
 import AppKit
 import Foundation
-import UserNotifications
+@preconcurrency import UserNotifications
 
 @MainActor
 class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
@@ -159,9 +159,9 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        Task { @MainActor in
-            let userInfo = response.notification.request.content.userInfo
+        let userInfo = response.notification.request.content.userInfo
 
+        Task { @MainActor in
             if let urlString = userInfo["url"] as? String,
                let url = URL(string: urlString) {
                 NSWorkspace.shared.open(url)
@@ -170,9 +170,9 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             if let notificationId = userInfo["notificationId"] as? String {
                 await self.markNotificationAsRead(notificationId)
             }
-
-            completionHandler()
         }
+
+        completionHandler()
     }
 
     private func markNotificationAsRead(_ notificationId: String) async {
