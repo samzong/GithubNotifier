@@ -66,4 +66,13 @@ extension GitHubNotification {
         let components = urlString.split(separator: "/")
         return components.last.flatMap { Int($0) }
     }
+
+    /// Unique key for grouping notifications of the same Issue/PR
+    public var groupKey: String? {
+        guard let number = issueOrPRNumber else { return nil }
+        let owner = repository.owner.login
+        let repo = repository.name
+        let typePrefix = notificationType == .pullRequest ? "pr" : "issue"
+        return "\(owner)/\(repo)/\(typePrefix)/\(number)"
+    }
 }
