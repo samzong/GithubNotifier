@@ -163,7 +163,6 @@ endef
 dmg:
 	$(call build_arch_release,x86_64)
 	$(call package_dmg,x86_64,$(DMG_LABEL_x86_64))
-	swift package clean
 	$(call build_arch_release,arm64)
 	$(call package_dmg,arm64,$(DMG_LABEL_arm64))
 	@echo ""
