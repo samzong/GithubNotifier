@@ -282,10 +282,6 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
     }
 
-    private var isNewVersionAvailable: Bool {
-        guard let latest = latestVersion else { return false }
-        return compareVersions(latest, appVersion) > 0
-    }
 
     private func compareVersions(_ v1: String, _ v2: String) -> Int {
         let parts1 = v1.replacingOccurrences(of: "v", with: "").split(separator: ".").compactMap { Int($0) }

@@ -5,7 +5,6 @@ struct UserPreferences {
     var refreshInterval: TimeInterval = 60 // 60 seconds
     var showNotificationCount: Bool = true
     var alwaysShowIcon: Bool = true
-    var autoMarkAsReadOnOpen: Bool = false
 
     static let tokenKeychainKey = "github_personal_access_token"
 

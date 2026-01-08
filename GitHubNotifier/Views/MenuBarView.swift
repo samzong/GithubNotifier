@@ -164,68 +164,7 @@ struct MenuBarView: View {
     
     @ViewBuilder
     private func notificationIcon(for notification: GitHubNotification, prState: PRState?, issueState: IssueState?) -> some View {
-        switch notification.notificationType {
-        case .pullRequest:
-            if let state = prState {
-                if let image = templateIcon(named: state.iconAssetName, size: 16) {
-                    Image(nsImage: image)
-                        .renderingMode(.template)
-                        .foregroundStyle(state.color)
-                        .frame(width: 16, height: 16)
-                } else {
-                    Image(systemName: state.icon)
-                        .font(.system(size: 14))
-                        .foregroundStyle(state.color)
-                        .frame(width: 16, height: 16)
-                }
-            } else {
-                // Fallback when state not yet loaded
-                if let assetName = notification.notificationType.iconAssetName,
-                   let image = templateIcon(named: assetName, size: 16) {
-                    Image(nsImage: image)
-                        .renderingMode(.template)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16, height: 16)
-                } else {
-                    Image(systemName: notification.notificationType.icon)
-                        .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16, height: 16)
-                }
-            }
-        case .issue:
-            if let state = issueState {
-                if let image = templateIcon(named: state.iconAssetName, size: 16) {
-                    Image(nsImage: image)
-                        .renderingMode(.template)
-                        .foregroundStyle(state.color)
-                        .frame(width: 16, height: 16)
-                } else {
-                    Image(systemName: state.icon)
-                        .font(.system(size: 14))
-                        .foregroundStyle(state.color)
-                        .frame(width: 16, height: 16)
-                }
-            } else {
-                if let assetName = notification.notificationType.iconAssetName,
-                   let image = templateIcon(named: assetName, size: 16) {
-                    Image(nsImage: image)
-                        .renderingMode(.template)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16, height: 16)
-                } else {
-                    Image(systemName: notification.notificationType.icon)
-                        .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16, height: 16)
-                }
-            }
-        default:
-            Image(systemName: notification.notificationType.icon)
-                .font(.system(size: 14))
-                .foregroundStyle(.secondary)
-                .frame(width: 16, height: 16)
-        }
+        IconHelper.notificationIcon(for: notification, prState: prState, issueState: issueState, size: 16)
     }
 
     private var tabPicker: some View {
@@ -320,16 +259,6 @@ struct MenuBarView: View {
         }
     }
 
-    private var emptyTitleForSelectedTab: String {
-        switch selectedTab {
-        case .all:
-            return "menubar.empty.title".localized
-        case .issues:
-            return "menubar.empty.issues".localized
-        case .prs:
-            return "menubar.empty.prs".localized
-        }
-    }
 
     private func openUnreadNotificationsInBrowser() {
         if let url = URL(string: "https://github.com/notifications?query=is%3Aunread") {
@@ -347,10 +276,6 @@ struct MenuBarView: View {
         }
     }
 
-    private func menuTitle(for notification: GitHubNotification) -> String {
-        let title = "\(notification.repository.fullName): \(notification.displayTitle)"
-        return title.truncate(to: 180)
-    }
 
     private func webURL(for notification: GitHubNotification) -> URL? {
         guard let apiURLString = notification.subject.url,
@@ -397,23 +322,7 @@ struct MenuBarView: View {
         return URL(string: "https://github.com/\(owner)/\(repo)")
     }
 
-    private var githubIcon: NSImage {
-        guard let image = NSImage(named: "GitHubLogo") else {
-            return NSImage()
-        }
-        image.size = NSSize(width: 16, height: 16)
-        image.isTemplate = true
-        return image
-    }
 
-    private func templateIcon(named name: String, size: CGFloat) -> NSImage? {
-        guard let image = NSImage(named: name) else {
-            return nil
-        }
-        image.size = NSSize(width: size, height: size)
-        image.isTemplate = true
-        return image
-    }
 
     private func clearInitialFocus() {
         DispatchQueue.main.async {
