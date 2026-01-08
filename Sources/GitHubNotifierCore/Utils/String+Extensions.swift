@@ -1,11 +1,11 @@
 import Foundation
 
 extension String {
-    var localized: String {
+    public var localized: String {
         NSLocalizedString(self, comment: "")
     }
 
-    func truncate(to length: Int, addEllipsis: Bool = true) -> String {
+    public func truncate(to length: Int, addEllipsis: Bool = true) -> String {
         if self.count <= length {
             return self
         }
@@ -15,7 +15,7 @@ extension String {
         return addEllipsis ? truncated + "..." : truncated
     }
 
-    var markdownPreview: String {
+    public var markdownPreview: String {
         var text = self
         text = text.replacingOccurrences(of: "```[\\s\\S]*?```", with: "", options: .regularExpression)
         text = text.replacingOccurrences(of: "`[^`]*`", with: "", options: .regularExpression)

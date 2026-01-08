@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import GitHubNotifierCore
 import Sparkle
 import SwiftUI
 

@@ -1,4 +1,5 @@
 import Combine
+import GitHubNotifierCore
 import Sparkle
 import SwiftUI
 

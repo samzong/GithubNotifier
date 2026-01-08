@@ -1,12 +1,12 @@
 import Foundation
 import Security
 
-final class KeychainHelper: Sendable {
-    static let shared = KeychainHelper()
+public final class KeychainHelper: Sendable {
+    public static let shared = KeychainHelper()
 
     private init() {}
 
-    func save(_ value: String, forKey key: String) -> Bool {
+    public func save(_ value: String, forKey key: String) -> Bool {
         guard let data = value.data(using: .utf8) else { return false }
 
         _ = delete(forKey: key)
@@ -22,7 +22,7 @@ final class KeychainHelper: Sendable {
         return status == errSecSuccess
     }
 
-    func get(forKey key: String) -> String? {
+    public func get(forKey key: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,
@@ -42,7 +42,7 @@ final class KeychainHelper: Sendable {
         return value
     }
 
-    func delete(forKey key: String) -> Bool {
+    public func delete(forKey key: String) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,

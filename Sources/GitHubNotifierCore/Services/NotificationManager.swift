@@ -10,18 +10,18 @@ import Foundation
 @preconcurrency import UserNotifications
 
 @MainActor
-class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
-    static let shared = NotificationManager()
+public class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
+    public static let shared = NotificationManager()
 
     private let notificationCenter = UNUserNotificationCenter.current()
-    weak var notificationService: NotificationService?
+    public weak var notificationService: NotificationService?
 
     override private init() {
         super.init()
         notificationCenter.delegate = self
     }
 
-    func requestAuthorization() async -> Bool {
+    public func requestAuthorization() async -> Bool {
         do {
             let granted = try await notificationCenter.requestAuthorization(options: [.alert, .sound, .badge])
             return granted
@@ -31,12 +31,12 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    func checkAuthorizationStatus() async -> UNAuthorizationStatus {
+    public func checkAuthorizationStatus() async -> UNAuthorizationStatus {
         let settings = await notificationCenter.notificationSettings()
         return settings.authorizationStatus
     }
 
-    func sendNotification(for notification: GitHubNotification) async {
+    public func sendNotification(for notification: GitHubNotification) async {
         guard UserDefaults.standard.bool(forKey: "enableSystemNotifications") else {
             return
         }
@@ -85,7 +85,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    func sendNotifications(for notifications: [GitHubNotification]) async {
+    public func sendNotifications(for notifications: [GitHubNotification]) async {
         let limit = 5
 
         let limitedNotifications = Array(notifications.prefix(limit))
@@ -114,15 +114,15 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         try? await notificationCenter.add(request)
     }
 
-    func clearAllNotifications() {
+    public func clearAllNotifications() {
         notificationCenter.removeAllDeliveredNotifications()
     }
 
-    func clearNotification(withId id: String) {
+    public func clearNotification(withId id: String) {
         notificationCenter.removeDeliveredNotifications(withIdentifiers: [id])
     }
 
-    func sendTestNotification() async {
+    public func sendTestNotification() async {
         let status = await checkAuthorizationStatus()
         guard status == .authorized else {
             print("Notification permission not granted")
@@ -154,7 +154,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
     // MARK: - UNUserNotificationCenterDelegate
 
-    nonisolated func userNotificationCenter(
+    public nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
@@ -187,7 +187,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    nonisolated func userNotificationCenter(
+    public nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void

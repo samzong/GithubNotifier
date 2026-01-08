@@ -13,7 +13,7 @@ import Foundation
 /// Provides methods for fetching notifications, marking them as read,
 /// and retrieving detailed information about pull requests and issues.
 /// Handles rate limiting, authentication errors, and network issues.
-final class GitHubAPI: Sendable {
+public final class GitHubAPI: Sendable {
     private let baseURL = "https://api.github.com"
     private let token: String
     private let session: URLSession
@@ -29,7 +29,7 @@ final class GitHubAPI: Sendable {
     /// Initializes a new GitHub API client.
     ///
     /// - Parameter token: GitHub personal access token for authentication
-    init(token: String) {
+    public init(token: String) {
         self.token = token
 
         // GitHub notifications are time-sensitive; avoid stale results from URLSession/URLCache.
@@ -45,7 +45,7 @@ final class GitHubAPI: Sendable {
     ///
     /// - Returns: An array of GitHub notifications
     /// - Throws: `APIError` if the request fails or response cannot be decoded
-    func fetchNotifications() async throws -> [GitHubNotification] {
+    public func fetchNotifications() async throws -> [GitHubNotification] {
         let endpoint = "\(baseURL)/notifications"
         let data = try await makeRequest(endpoint: endpoint)
 
@@ -56,7 +56,7 @@ final class GitHubAPI: Sendable {
     ///
     /// - Parameter threadId: The unique identifier of the notification thread
     /// - Throws: `APIError` if the request fails
-    func markNotificationAsRead(threadId: String) async throws {
+    public func markNotificationAsRead(threadId: String) async throws {
         let endpoint = "\(baseURL)/notifications/threads/\(threadId)"
         _ = try await makeRequest(endpoint: endpoint, method: "PATCH")
     }
@@ -64,7 +64,7 @@ final class GitHubAPI: Sendable {
     /// Marks all notifications as read for the authenticated user.
     ///
     /// - Throws: `APIError` if the request fails
-    func markAllNotificationsAsRead() async throws {
+    public func markAllNotificationsAsRead() async throws {
         let endpoint = "\(baseURL)/notifications"
         _ = try await makeRequest(endpoint: endpoint, method: "PUT")
     }
@@ -77,7 +77,7 @@ final class GitHubAPI: Sendable {
     ///   - number: The pull request number
     /// - Returns: Detailed pull request information including state and metadata
     /// - Throws: `APIError` if the request fails or response cannot be decoded
-    func fetchPullRequest(owner: String, repo: String, number: Int) async throws -> PullRequest {
+    public func fetchPullRequest(owner: String, repo: String, number: Int) async throws -> PullRequest {
         let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/pulls/\(number)"
         let data = try await makeRequest(endpoint: endpoint)
 
@@ -92,7 +92,7 @@ final class GitHubAPI: Sendable {
     ///   - number: The issue number
     /// - Returns: Detailed issue information including state and metadata
     /// - Throws: `APIError` if the request fails or response cannot be decoded
-    func fetchIssue(owner: String, repo: String, number: Int) async throws -> Issue {
+    public func fetchIssue(owner: String, repo: String, number: Int) async throws -> Issue {
         let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/issues/\(number)"
         let data = try await makeRequest(endpoint: endpoint)
 
@@ -162,7 +162,7 @@ final class GitHubAPI: Sendable {
 }
 
 /// Errors that can occur during GitHub API interactions.
-enum APIError: Error, LocalizedError {
+public enum APIError: Error, LocalizedError {
     /// The provided endpoint URL is malformed
     case invalidURL
 
@@ -181,7 +181,7 @@ enum APIError: Error, LocalizedError {
     /// Rate limit exceeded - includes optional reset time
     case rateLimited(resetTime: Date?)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidURL:
             return "Invalid URL"

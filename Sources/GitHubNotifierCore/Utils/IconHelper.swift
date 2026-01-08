@@ -9,14 +9,14 @@
 import AppKit
 import SwiftUI
 
-enum IconHelper {
+public enum IconHelper {
     /// Creates a template icon from the asset catalog.
     ///
     /// - Parameters:
     ///   - name: The name of the image asset
     ///   - size: The desired size for the icon (width and height)
     /// - Returns: An NSImage configured as a template, or nil if the asset doesn't exist
-    static func templateIcon(named name: String, size: CGFloat) -> NSImage? {
+    public static func templateIcon(named name: String, size: CGFloat) -> NSImage? {
         guard let image = NSImage(named: name) else {
             return nil
         }
@@ -38,7 +38,7 @@ enum IconHelper {
     ///   - size: The desired icon size in points
     /// - Returns: A view containing the appropriate icon with correct styling
     @ViewBuilder
-    static func notificationIcon(
+    public static func notificationIcon(
         for notification: GitHubNotification,
         prState: PRState?,
         issueState: IssueState?,

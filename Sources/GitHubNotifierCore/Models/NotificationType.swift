@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum NotificationType: String, CaseIterable {
+public enum NotificationType: String, CaseIterable, Sendable {
     case pullRequest = "PullRequest"
     case issue = "Issue"
     case commit = "Commit"
@@ -11,11 +11,11 @@ enum NotificationType: String, CaseIterable {
     case repositoryVulnerabilityAlert = "RepositoryVulnerabilityAlert"
     case unknown = "Unknown"
 
-    static func from(_ typeString: String) -> NotificationType {
+    public static func from(_ typeString: String) -> NotificationType {
         NotificationType(rawValue: typeString) ?? .unknown
     }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .pullRequest:
             "Pull Request"
@@ -38,7 +38,7 @@ enum NotificationType: String, CaseIterable {
         }
     }
 
-    var icon: String {
+    public var icon: String {
         switch self {
         case .pullRequest:
             "arrow.triangle.pull"
@@ -61,7 +61,7 @@ enum NotificationType: String, CaseIterable {
         }
     }
 
-    var iconAssetName: String? {
+    public var iconAssetName: String? {
         switch self {
         case .pullRequest:
             "PullRequestOpen"
@@ -73,13 +73,13 @@ enum NotificationType: String, CaseIterable {
     }
 }
 
-enum PRState {
+public enum PRState: Sendable {
     case open
     case closed
     case merged
     case draft
 
-    var color: Color {
+    public var color: Color {
         switch self {
         case .open:
             .green
@@ -92,7 +92,7 @@ enum PRState {
         }
     }
 
-    var icon: String {
+    public var icon: String {
         switch self {
         case .open:
             "arrow.triangle.pull"
@@ -105,7 +105,7 @@ enum PRState {
         }
     }
 
-    var iconAssetName: String {
+    public var iconAssetName: String {
         switch self {
         case .open:
             "PullRequestOpen"
@@ -119,12 +119,12 @@ enum PRState {
     }
 }
 
-enum IssueState {
+public enum IssueState: Sendable {
     case open
     case closedCompleted
     case closedNotPlanned
 
-    var color: Color {
+    public var color: Color {
         switch self {
         case .open:
             .green
@@ -135,7 +135,7 @@ enum IssueState {
         }
     }
 
-    var icon: String {
+    public var icon: String {
         switch self {
         case .open:
             "exclamationmark.circle"
@@ -146,7 +146,7 @@ enum IssueState {
         }
     }
 
-    var iconAssetName: String {
+    public var iconAssetName: String {
         switch self {
         case .open:
             "IssueOpen"

@@ -2,12 +2,12 @@ import Foundation
 
 @Observable
 @MainActor
-class NotificationService {
-    var notifications: [GitHubNotification] = []
-    var isLoading = false
-    var errorMessage: String?
+public class NotificationService {
+    public var notifications: [GitHubNotification] = []
+    public var isLoading = false
+    public var errorMessage: String?
 
-    var unreadCount: Int { notifications.count }
+    public var unreadCount: Int { notifications.count }
 
     private var api: GitHubAPI?
     private var refreshTimer: Timer?
@@ -15,7 +15,7 @@ class NotificationService {
     private var issueStateCache: [String: IssueState] = [:]
     private var previousNotificationIds: Set<String> = []
 
-    init(token: String? = nil) {
+    public init(token: String? = nil) {
         if let token {
             self.api = GitHubAPI(token: token)
         }
@@ -31,11 +31,11 @@ class NotificationService {
         }
     }
 
-    func configure(token: String) {
+    public func configure(token: String) {
         self.api = GitHubAPI(token: token)
     }
 
-    func clearToken() {
+    public func clearToken() {
         api = nil
         notifications = []
         errorMessage = nil
@@ -44,7 +44,7 @@ class NotificationService {
         issueStateCache = [:]
     }
 
-    func fetchNotifications(isAutoRefresh: Bool = false) async {
+    public func fetchNotifications(isAutoRefresh: Bool = false) async {
         guard let api else {
             errorMessage = "GitHub token not configured"
             return
@@ -146,7 +146,7 @@ class NotificationService {
         }
     }
 
-    func getPRState(for notification: GitHubNotification) -> PRState? {
+    public func getPRState(for notification: GitHubNotification) -> PRState? {
         guard notification.notificationType == .pullRequest,
               let number = notification.issueOrPRNumber else {
             return nil
@@ -159,7 +159,7 @@ class NotificationService {
         return prStateCache[cacheKey]
     }
 
-    func getIssueState(for notification: GitHubNotification) -> IssueState? {
+    public func getIssueState(for notification: GitHubNotification) -> IssueState? {
         guard notification.notificationType == .issue,
               let number = notification.issueOrPRNumber else {
             return nil
@@ -172,7 +172,7 @@ class NotificationService {
         return issueStateCache[cacheKey]
     }
 
-    func getNotificationBody(for notification: GitHubNotification) async -> String? {
+    public func getNotificationBody(for notification: GitHubNotification) async -> String? {
         guard let api else { return nil }
 
         let owner = notification.repository.owner.login
@@ -195,7 +195,7 @@ class NotificationService {
         }
     }
 
-    func markAsRead(notification: GitHubNotification) async {
+    public func markAsRead(notification: GitHubNotification) async {
         guard let api else { return }
 
         do {
@@ -206,7 +206,7 @@ class NotificationService {
         }
     }
 
-    func markAllAsRead() async {
+    public func markAllAsRead() async {
         guard let api else { return }
 
         do {
@@ -217,7 +217,7 @@ class NotificationService {
         }
     }
 
-    func startAutoRefresh(interval: TimeInterval) {
+    public func startAutoRefresh(interval: TimeInterval) {
         refreshTimer?.invalidate()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -226,7 +226,7 @@ class NotificationService {
         }
     }
 
-    func stopAutoRefresh() {
+    public func stopAutoRefresh() {
         refreshTimer?.invalidate()
         refreshTimer = nil
     }

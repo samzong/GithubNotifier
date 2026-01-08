@@ -1,4 +1,5 @@
 import AppKit
+import GitHubNotifierCore
 import SwiftUI
 
 struct MenuBarView: View {

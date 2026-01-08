@@ -1,7 +1,7 @@
 import Foundation
 
 extension Date {
-    func timeAgo() -> String {
+    public func timeAgo() -> String {
         let calendar = Calendar.current
         let now = Date()
         let components = calendar.dateComponents([.year, .month, .weekOfYear, .day, .hour, .minute], from: self, to: now)

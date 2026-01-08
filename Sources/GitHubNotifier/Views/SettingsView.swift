@@ -1,3 +1,4 @@
+import GitHubNotifierCore
 import ServiceManagement
 import Sparkle
 import SwiftUI

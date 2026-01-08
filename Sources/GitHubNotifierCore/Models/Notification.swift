@@ -1,0 +1,101 @@
+import Foundation
+
+public struct GitHubNotification: Codable, Identifiable, Sendable {
+    public let id: String
+    public let unread: Bool
+    public let reason: String
+    public let updatedAt: Date
+    public let lastReadAt: Date?
+    public let subject: Subject
+    public let repository: Repository
+    public let url: String
+
+    public enum CodingKeys: String, CodingKey {
+        case id, unread, reason, url
+        case updatedAt = "updated_at"
+        case lastReadAt = "last_read_at"
+        case subject, repository
+    }
+
+    public struct Subject: Codable, Sendable {
+        public let title: String
+        public let url: String?
+        public let latestCommentUrl: String?
+        public let type: String
+
+        enum CodingKeys: String, CodingKey {
+            case title, url, type
+            case latestCommentUrl = "latest_comment_url"
+        }
+    }
+
+    public struct Repository: Codable, Sendable {
+        public let id: Int
+        public let name: String
+        public let fullName: String
+        public let htmlUrl: String
+        public let owner: Owner
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, owner
+            case fullName = "full_name"
+            case htmlUrl = "html_url"
+        }
+
+        public struct Owner: Codable, Sendable {
+            public let login: String
+        }
+    }
+}
+
+public struct PullRequest: Codable, Sendable {
+    public let number: Int
+    public let state: String
+    public let title: String
+    public let body: String?
+    public let draft: Bool
+    public let merged: Bool
+    public let mergedAt: Date?
+    public let htmlUrl: String
+
+    enum CodingKeys: String, CodingKey {
+        case number, state, title, body, draft, merged
+        case mergedAt = "merged_at"
+        case htmlUrl = "html_url"
+    }
+}
+
+public struct Issue: Codable, Sendable {
+    public let number: Int
+    public let state: String
+    public let stateReason: String?
+    public let title: String
+    public let body: String?
+    public let htmlUrl: String
+
+    enum CodingKeys: String, CodingKey {
+        case number, state, title, body
+        case stateReason = "state_reason"
+        case htmlUrl = "html_url"
+    }
+}
+
+extension GitHubNotification {
+    public var notificationType: NotificationType {
+        NotificationType.from(subject.type)
+    }
+
+    public var displayTitle: String {
+        subject.title
+    }
+
+    public var displaySubtitle: String {
+        "\(repository.fullName) · \(reason.capitalized)"
+    }
+
+    public var issueOrPRNumber: Int? {
+        guard let urlString = subject.url else { return nil }
+        let components = urlString.split(separator: "/")
+        return components.last.flatMap { Int($0) }
+    }
+}
