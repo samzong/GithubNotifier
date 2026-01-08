@@ -28,6 +28,31 @@ public actor GitHubGraphQLClient {
         self.session = URLSession(configuration: configuration)
     }
 
+    // MARK: - User Info
+    
+    public struct ViewerInfo: Decodable, Sendable {
+        public let login: String
+        public let avatarUrl: String
+    }
+    
+    public func fetchViewer() async throws -> ViewerInfo {
+        let query = """
+        query {
+          viewer {
+            login
+            avatarUrl
+          }
+        }
+        """
+        
+        let result: ViewerData = try await execute(query: query)
+        return result.viewer
+    }
+    
+    private struct ViewerData: Decodable {
+        let viewer: ViewerInfo
+    }
+
     // MARK: - Core Query Method
 
     /// Execute GraphQL query
@@ -65,24 +90,7 @@ public actor GitHubGraphQLClient {
         return data
     }
 
-    // MARK: - User Queries
 
-    /// Fetch current authenticated user info
-    public func fetchViewer() async throws -> Viewer {
-        let query = """
-        query {
-          viewer {
-            login
-            name
-            avatarUrl
-            email
-          }
-        }
-        """
-
-        let result: ViewerData = try await execute(query: query)
-        return result.viewer
-    }
 
     // MARK: - Notification Details
 
@@ -362,12 +370,12 @@ public struct Comment: Codable, Sendable {
     public let createdAt: Date
 }
 
-public struct CIStatus: Sendable {
+public struct CIStatus: Sendable, Hashable {
     public let state: String // SUCCESS, FAILURE, PENDING, ERROR
     public let checks: [CheckResult]
 }
 
-public struct CheckResult: Sendable {
+public struct CheckResult: Sendable, Hashable {
     public let name: String
     public let status: String // COMPLETED, IN_PROGRESS, QUEUED
     public let conclusion: String? // SUCCESS, FAILURE, NEUTRAL, CANCELLED, SKIPPED
@@ -580,6 +588,154 @@ private struct RepoIssuesData: Decodable {
 
 private struct RepoIssues: Decodable {
     let issues: IssueConnection
+}
+
+// MARK: - Search API (I1 Infrastructure)
+
+extension GitHubGraphQLClient {
+    /// Search for Issues and Pull Requests using GitHub Search API
+    /// - Parameters:
+    ///   - query: GitHub search syntax (e.g., "is:open author:@me")
+    ///   - first: Number of results to return
+    /// - Returns: Array of SearchResultItem
+    public func search(query: String, first: Int = 50) async throws -> [SearchResultItem] {
+        let graphqlQuery = """
+        query($query: String!, $first: Int!) {
+          search(query: $query, type: ISSUE, first: $first) {
+            nodes {
+              __typename
+              ... on PullRequest {
+                id
+                number
+                title
+                state
+                repository {
+                  owner { login }
+                  name
+                }
+                author { login avatarUrl }
+                updatedAt
+                commits(last: 1) {
+                  nodes {
+                    commit {
+                      statusCheckRollup {
+                        state
+                        contexts(last: 100) {
+                          nodes {
+                            ... on CheckRun {
+                              name
+                              conclusion
+                              status
+                            }
+                            ... on StatusContext {
+                              context
+                              state
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              ... on Issue {
+                id
+                number
+                title
+                state
+                repository {
+                  owner { login }
+                  name
+                }
+                author { login avatarUrl }
+                updatedAt
+              }
+            }
+          }
+        }
+        """
+
+        let variables: [String: Any] = [
+            "query": query,
+            "first": first,
+        ]
+
+        let result: SearchData = try await execute(query: graphqlQuery, variables: variables)
+        return result.search.nodes.compactMap { node -> SearchResultItem? in
+            guard let id = node.id,
+                  let number = node.number,
+                  let title = node.title,
+                  let state = node.state,
+                  let repositoryOwner = node.repository?.owner.login,
+                  let repositoryName = node.repository?.name,
+                  let updatedAt = node.updatedAt else {
+                return nil
+            }
+
+            let itemType: SearchResultItem.ItemType = node.typename == "PullRequest" ? .pullRequest : .issue
+
+            return SearchResultItem(
+                id: id,
+                number: number,
+                title: title,
+                state: state,
+                repositoryOwner: repositoryOwner,
+                repositoryName: repositoryName,
+                authorLogin: node.author?.login,
+                authorAvatarUrl: node.author?.avatarUrl,
+                updatedAt: updatedAt,
+                itemType: itemType,
+                ciStatus: node.commits?.nodes.first?.commit.statusCheckRollup?.toCIStatus()
+            )
+        }
+    }
+}
+
+private struct SearchData: Decodable {
+    let search: SearchConnection
+}
+
+private struct SearchConnection: Decodable {
+    let nodes: [SearchNode]
+}
+
+private struct SearchNode: Decodable {
+    let typename: String?
+    let id: String?
+    let number: Int?
+    let title: String?
+    let state: String?
+    let repository: SearchRepository?
+    let author: Author?
+    let updatedAt: Date?
+    let commits: CommitConnection?
+
+    private enum CodingKeys: String, CodingKey {
+        case typename = "__typename"
+        case id, number, title, state, repository, author, updatedAt, commits
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        typename = try container.decodeIfPresent(String.self, forKey: .typename)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+        number = try container.decodeIfPresent(Int.self, forKey: .number)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        state = try container.decodeIfPresent(String.self, forKey: .state)
+        repository = try container.decodeIfPresent(SearchRepository.self, forKey: .repository)
+        author = try container.decodeIfPresent(Author.self, forKey: .author)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+        commits = try container.decodeIfPresent(CommitConnection.self, forKey: .commits)
+    }
+}
+
+private struct SearchRepository: Decodable {
+    let owner: RepositoryOwner
+    let name: String
+}
+
+private struct RepositoryOwner: Decodable {
+    let login: String
 }
 
 // MARK: - Error Types

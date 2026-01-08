@@ -55,6 +55,14 @@
 "menubar.tab.all" = "All";
 "menubar.tab.issues" = "Issues";
 "menubar.tab.prs" = "PRs";
+"menubar.tab.notifications" = "通知";
+"menubar.tab.my_items" = "我的";
+"menubar.my_items.empty" = "暂无相关条目";
+"menubar.filter.all" = "全部";
+"menubar.filter.created" = "创建";
+"menubar.filter.assigned" = "指派";
+"menubar.filter.mentioned" = "提及";
+"menubar.filter.review_requested" = "待审";
 "menubar.empty.issues" = "没有未读 Issues";
 "menubar.empty.prs" = "没有未读 PRs";
 "menubar.mark_all_read" = "全部已读";
