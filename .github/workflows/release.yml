@@ -105,7 +105,6 @@ jobs:
                   url="https://github.com/samzong/GitHubNotifier/releases/download/${{ env.VERSION }}/GitHubNotifier-x86_64.dmg"
                   type="application/octet-stream"
                   sparkle:os="macos"
-                  length="${X86_SIZE}"
                   ${X86_SIG}
                 />
               </item>
@@ -121,7 +120,6 @@ jobs:
                   url="https://github.com/samzong/GitHubNotifier/releases/download/${{ env.VERSION }}/GitHubNotifier-arm64.dmg"
                   type="application/octet-stream"
                   sparkle:os="macos"
-                  length="${ARM_SIZE}"
                   ${ARM_SIG}
                 />
               </item>

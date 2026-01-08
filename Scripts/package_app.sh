@@ -9,6 +9,8 @@ set -euo pipefail
 CONFIG="${1:-release}"
 ARCH="${2:-$(uname -m)}"
 APP_NAME="GitHubNotifier"
+VERSION="${VERSION:-0.1.0}"
+BUILD_NUMBER="${BUILD_NUMBER:-1}"
 
 # Determine build directory based on whether cross-compiling
 if [ -d ".build/${ARCH}-apple-macosx/${CONFIG}" ]; then
@@ -39,6 +41,12 @@ fi
 # Copy Info.plist
 if [ -f "Sources/GitHubNotifier/Info.plist" ]; then
     cp "Sources/GitHubNotifier/Info.plist" "${BUNDLE}/Contents/"
+    
+    # Update version numbers
+    INFO_PLIST="${BUNDLE}/Contents/Info.plist"
+    echo "===> Updating version to ${VERSION} (${BUILD_NUMBER})..."
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION}" "${INFO_PLIST}"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUMBER}" "${INFO_PLIST}"
 fi
 
 # Copy Assets.xcassets (compile with actool if available, otherwise copy)
