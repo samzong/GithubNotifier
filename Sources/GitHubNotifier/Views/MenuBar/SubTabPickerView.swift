@@ -67,20 +67,17 @@ struct SubTabPickerView: View {
         Button {
             Task { await onMarkAsRead() }
         } label: {
-            HStack(spacing: 4) {
-                if isMarkingAsRead {
-                    ProgressView()
-                        .scaleEffect(0.6)
-                } else {
-                    Image(systemName: "checkmark.circle")
-                        .font(.system(size: 11))
-                }
-                Text("menubar.mark_all_read".localized)
-                    .font(.system(size: 11))
+            if isMarkingAsRead {
+                ProgressView()
+                    .scaleEffect(0.6)
+            } else {
+                Image(systemName: "checkmark.circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
             }
-            .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
+        .help("menubar.mark_all_read".localized)
         .disabled(isMarkingAsRead)
     }
 }

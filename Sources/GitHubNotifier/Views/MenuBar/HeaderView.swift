@@ -36,10 +36,10 @@ struct HeaderView: View {
                 Button {
                     Task { await onRefresh() }
                 } label: {
-                    Image(systemName: "arrow.clockwise")
+                    Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.system(size: 12))
-                        .rotationEffect(.degrees(isLoading ? 360 : 0))
-                        .animation(isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isLoading)
+                                                .rotationEffect(.degrees(isLoading ? 360 : 0))
+                        .animation(isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .linear(duration: 0), value: isLoading)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)

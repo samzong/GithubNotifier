@@ -74,7 +74,7 @@ struct MenuBarView: View {
             contentView
                 .frame(maxHeight: .infinity, alignment: .top)
         }
-        .frame(width: 400, height: 600)
+        .frame(width: 320, height: 520)
         .background(Color(nsColor: .windowBackgroundColor))
         .task {
             clearInitialFocus()
