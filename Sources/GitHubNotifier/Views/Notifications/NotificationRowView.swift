@@ -28,7 +28,7 @@ struct NotificationRowView: View {
                             .foregroundStyle(.secondary)
 
                         if let number = notification.issueOrPRNumber {
-                            Text("#\(number)")
+                            Text("#\(number.formatted(.number.grouping(.never)))")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }

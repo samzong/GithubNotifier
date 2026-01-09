@@ -234,13 +234,15 @@ struct MenuBarView: View {
         }
 
         let segments = apiURL.pathComponents
-        guard segments.count >= 3 else {
-            return URL(string: apiURLString.replacingOccurrences(of: "api.github.com", with: "github.com"))
+        // pathComponents: ["/", "repos", "owner", "repo", "pulls", "1"]
+        guard segments.count >= 5, segments[1] == "repos" else {
+            return URL(string: apiURLString.replacingOccurrences(of: "api.github.com/repos", with: "github.com")
+                .replacingOccurrences(of: "api.github.com", with: "github.com"))
         }
 
-        let owner = segments[1]
-        let repo = segments[2]
-        let rest = Array(segments.dropFirst(3))
+        let owner = segments[2]
+        let repo = segments[3]
+        let rest = Array(segments.dropFirst(4))
 
         if rest.count >= 2 {
             let resource = rest[0]

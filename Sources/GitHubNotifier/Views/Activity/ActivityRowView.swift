@@ -22,7 +22,7 @@ struct ActivityRowView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
-                        Text("#\(item.number)")
+                        Text("#\(item.number.formatted(.number.grouping(.never)))")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
 
