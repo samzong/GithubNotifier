@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHubNotifier Rules Engine Guide GitHubNotifier</title>
+    <meta name="description" content="The Rules Engine is a powerful feature in GitHubNotifier designed to help you automatically filter, categorize, and mana">
+    <meta name="keywords" content="macOS, GitHub, Notifier, Menubar, SwiftUI, Developer Tools">
+    <link rel="stylesheet" type="text/css" href="css/main.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/tocbot.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/media.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/sidebar.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/copy.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/demo-preview.css?v=1.34.4">
+    <link rel="icon" href="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png" type="image/x-icon">
+    <script src="js/copy.js?v=1.34.4"></script>
+    <script src="js/dark-mode.js?v=1.34.4"></script>
+    <script src="js/markdown-style.js?v=1.34.4"></script>
+  </head>
+  <body id="idoctotop"><a href="#idoctotop" class="gototop">top</a>
+    <header class="header">
+      <article class="inner warpper" style="max-width:720px;"><a class="logo" href="index.html"><img alt="GitHubNotifier logo" src="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png">
+<span class="title">GitHubNotifier</span></a>
+        <div class="content">
+          <ul class="menu">
+            <li><a href="index.html" target="" class="">Home</a></li>
+            <li><a href="https://github.com/samzong" target="__blank" class="">About</a></li>
+          </ul><a href="https://github.com/samzong/GitHubNotifier" target="_blank" rel="noopener noreferrer" title="Github" name="Github" class="github"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+            </svg></a>
+          <dark-mode permanent=""></dark-mode>
+        </div>
+      </article>
+    </header>
+    <div style="max-width:720px;" class="warpper-content warpper notocs">
+      <markdown-style theme-auto-switch-disabled="">
+        <h1 id="githubnotifier-rules-engine-guide"><a aria-hidden="true" tabindex="-1" href="#githubnotifier-rules-engine-guide" class="anchor"><span class="icon icon-link"></span></a>GitHubNotifier Rules Engine Guide</h1>
+        <p>The <strong>Rules Engine</strong> is a powerful feature in GitHubNotifier designed to help you automatically filter, categorize, and manage your GitHub notifications. By defining custom rules, you can ensure critical notifications stand out while automatically handling distractions.</p>
+        <h2 id="accessing-rules-settings"><a aria-hidden="true" tabindex="-1" href="#accessing-rules-settings" class="anchor"><span class="icon icon-link"></span></a>Accessing Rules Settings</h2>
+        <ol>
+          <li>Open <strong>Settings</strong>.</li>
+          <li>Click on the <strong>Rules</strong> tab at the top.</li>
+          <li>You will see the rules list, where you can add, edit, toggle, or delete rules.</li>
+        </ol>
+        <h2 id="creating-a-new-rule"><a aria-hidden="true" tabindex="-1" href="#creating-a-new-rule" class="anchor"><span class="icon icon-link"></span></a>Creating a New Rule</h2>
+        <ol>
+          <li>Click the <strong>+ Add Rule</strong> button at the top right, or the <strong>+</strong> button in the empty state.</li>
+          <li>Configure the rule details in the editor that appears.</li>
+        </ol>
+        <h3 id="rule-configuration"><a aria-hidden="true" tabindex="-1" href="#rule-configuration" class="anchor"><span class="icon icon-link"></span></a>Rule Configuration</h3>
+        <p>A rule consists of the following components:</p>
+        <h4 id="1-basic-info"><a aria-hidden="true" tabindex="-1" href="#1-basic-info" class="anchor"><span class="icon icon-link"></span></a>1. Basic Info</h4>
+        <ul>
+          <li><strong>Rule Name</strong>: Give it a recognizable name (e.g., "Auto-read CI").</li>
+          <li><strong>Enabled</strong>: Whether the rule is active immediately after saving.</li>
+        </ul>
+        <h4 id="2-conditions"><a aria-hidden="true" tabindex="-1" href="#2-conditions" class="anchor"><span class="icon icon-link"></span></a>2. Conditions</h4>
+        <p>You can add one or more conditions to filter notifications. Each condition consists of a <code>Field</code>, <code>Operator</code>, and <code>Value</code>.</p>
+        <p><strong>Supported Fields:</strong></p>
+        <ul>
+          <li><strong>Repository</strong>: Repository name, usually <code>owner/repo</code>. (Supports wildcard <code>*</code>)
+            <ul>
+              <li>Example: <code>monitor/backend</code></li>
+            </ul>
+          </li>
+          <li><strong>Organization</strong>: Organization name. (Supports wildcard <code>*</code>)
+            <ul>
+              <li>Example: <code>google</code>, <code>facebook</code></li>
+            </ul>
+          </li>
+          <li><strong>Type</strong>: Notification type.
+            <ul>
+              <li>Values: <code>PullRequest</code>, <code>Issue</code>, <code>Release</code>, <code>Commit</code>, <code>Discussion</code>, etc.</li>
+            </ul>
+          </li>
+          <li><strong>Reason</strong>: The reason you received the notification.
+            <ul>
+              <li>Values: <code>Assigned</code>, <code>Mentioned</code>, <code>Review Requested</code>, <code>CI Activity</code>, etc.</li>
+            </ul>
+          </li>
+        </ul>
+        <p><strong>Operators:</strong></p>
+        <ul>
+          <li><strong>equals</strong>: Exact match.</li>
+          <li><strong>does not equal</strong>: Exclude specific values.</li>
+          <li><strong>matches</strong>: Pattern match (Only for Repository and Organization, supports <code>*</code> wildcard).</li>
+        </ul>
+        <p>
+          <strong>Logic:</strong>
+          When using multiple conditions, choose how they combine:
+        </p>
+        <ul>
+          <li><strong>AND</strong>: All conditions must be true (e.g., CI notification <strong>AND</strong> from a specific repo).</li>
+          <li><strong>OR</strong>: Any condition can be true (e.g., CI notification <strong>OR</strong> Bot comment).</li>
+        </ul>
+        <h4 id="3-actions"><a aria-hidden="true" tabindex="-1" href="#3-actions" class="anchor"><span class="icon icon-link"></span></a>3. Actions</h4>
+        <p>When a notification matches the rule, the selected actions are executed.</p>
+        <ul>
+          <li><strong>Mark as Read</strong>: Automatically marks the notification as read (it won't appear in the unread list).</li>
+          <li><strong>Suppress System Notification</strong>: Prevents the macOS system push notification, but the item remains unread in the app.</li>
+        </ul>
+        <hr>
+        <h2 id="evaluation-flow"><a aria-hidden="true" tabindex="-1" href="#evaluation-flow" class="anchor"><span class="icon icon-link"></span></a>Evaluation Flow</h2>
+        <p>The Rules Engine evaluates notifications sequentially based on the order in the list (Priority).</p>
+        <pre class="language-mermaid"><code class="language-mermaid code-highlight"><span class="code-line line-number" line="1"><span class="token keyword">graph</span> TD
+</span><span class="code-line line-number" line="2">    N<span class="token text string">[New Notification]</span> <span class="token arrow operator">--></span> R1<span class="token text string">{Rule 1 Match?}</span>
+</span><span class="code-line line-number" line="3">    R1 <span class="token inter-arrow-label"><span class="token arrow-head arrow operator">--</span> <span class="token label property">Yes</span> <span class="token arrow operator">--></span></span> A1<span class="token text string">[Execute Actions]</span>
+</span><span class="code-line line-number" line="4">    A1 <span class="token arrow operator">--></span> STOP<span class="token text string">((Stop))</span>
+</span><span class="code-line line-number" line="5">    R1 <span class="token inter-arrow-label"><span class="token arrow-head arrow operator">--</span> <span class="token label property">No</span> <span class="token arrow operator">--></span></span> R2<span class="token text string">{Rule 2 Match?}</span>
+</span><span class="code-line line-number" line="6">    R2 <span class="token inter-arrow-label"><span class="token arrow-head arrow operator">--</span> <span class="token label property">Yes</span> <span class="token arrow operator">--></span></span> A2<span class="token text string">[Execute Actions]</span>
+</span><span class="code-line line-number" line="7">    A2 <span class="token arrow operator">--></span> STOP
+</span><span class="code-line line-number" line="8">    R2 <span class="token inter-arrow-label"><span class="token arrow-head arrow operator">--</span> <span class="token label property">No</span> <span class="token arrow operator">--></span></span> R3<span class="token text string">[... Next Rule]</span>
+</span><span class="code-line line-number" line="9">    R3 <span class="token arrow operator">--></span> D<span class="token text string">[Default Behavior]</span>
+</span><span class="code-line line-number" line="10">    D <span class="token arrow operator">--></span> STOP
+</span></code><input type="hidden" value="graph TD
+    N[New Notification] --> R1{Rule 1 Match?}
+    R1 -- Yes --> A1[Execute Actions]
+    A1 --> STOP((Stop))
+    R1 -- No --> R2{Rule 2 Match?}
+    R2 -- Yes --> A2[Execute Actions]
+    A2 --> STOP
+    R2 -- No --> R3[... Next Rule]
+    R3 --> D[Default Behavior]
+    D --> STOP
+"><div onclick="copied(this)" class="copied"><svg class="octicon-copy" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" height="12" width="12"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path></svg><svg class="octicon-check" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" height="12" width="12"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg></div></pre>
+        <hr>
+        <h2 id="examples"><a aria-hidden="true" tabindex="-1" href="#examples" class="anchor"><span class="icon icon-link"></span></a>Examples</h2>
+        <h3 id="example-1-reduce-ci-noise"><a aria-hidden="true" tabindex="-1" href="#example-1-reduce-ci-noise" class="anchor"><span class="icon icon-link"></span></a>Example 1: Reduce CI Noise</h3>
+        <p>CI/CD status updates are frequent. Create a rule to auto-read them if you don't need immediate alerts.</p>
+        <ul>
+          <li><strong>Name</strong>: Auto-read CI</li>
+          <li><strong>Condition</strong>:
+            <ul>
+              <li><code>Reason</code> <strong>equals</strong> <code>CI Activity</code></li>
+            </ul>
+          </li>
+          <li><strong>Action</strong>:
+            <ul>
+              <li><code>Mark as Read</code></li>
+            </ul>
+          </li>
+        </ul>
+        <h3 id="example-2-silence-organization-notifications"><a aria-hidden="true" tabindex="-1" href="#example-2-silence-organization-notifications" class="anchor"><span class="icon icon-link"></span></a>Example 2: Silence Organization Notifications</h3>
+        <p>If you follow an organization (e.g., <code>swiftlang</code>) but don't want system popups for every activity:</p>
+        <ul>
+          <li><strong>Name</strong>: Silent Swift</li>
+          <li><strong>Condition</strong>:
+            <ul>
+              <li><code>Organization</code> <strong>equals</strong> <code>swiftlang</code></li>
+            </ul>
+          </li>
+          <li><strong>Action</strong>:
+            <ul>
+              <li><code>Suppress System Notification</code></li>
+            </ul>
+          </li>
+        </ul>
+        <h3 id="example-3-focus-on-core-repos-wildcard"><a aria-hidden="true" tabindex="-1" href="#example-3-focus-on-core-repos-wildcard" class="anchor"><span class="icon icon-link"></span></a>Example 3: Focus on Core Repos (Wildcard)</h3>
+        <p>
+          If you only care about PRs from <code>my-company/backend</code> and <code>my-company/ios</code>, you can auto-read others.
+          <em>(Note: Since rules are "match and execute", you might set up an exclusion rule or use wildcards depending on strategy)</em>
+        </p>
+        <ul>
+          <li><strong>Name</strong>: Ignore non-core repos</li>
+          <li><strong>Condition</strong>:
+            <ul>
+              <li><code>Repository</code> <strong>does not equal</strong> <code>my-company/*</code></li>
+            </ul>
+          </li>
+          <li><strong>Action</strong>:
+            <ul>
+              <li><code>Mark as Read</code></li>
+            </ul>
+          </li>
+        </ul>
+        <hr>
+        <h2 id="priority--faq"><a aria-hidden="true" tabindex="-1" href="#priority--faq" class="anchor"><span class="icon icon-link"></span></a>Priority &#x26; FAQ</h2>
+        <p><strong>Priority Management</strong></p>
+        <ul>
+          <li>Rules at the <strong>top</strong> have higher priority.</li>
+          <li>Processing <strong>stops</strong> at the first matching rule.</li>
+          <li>Drag and drop rules in the list to reorder them.</li>
+        </ul>
+        <p><strong>FAQ</strong></p>
+        <p>
+          <strong>Q: Do rules apply to existing notifications?</strong>
+          A: No. Rules are applied only when <strong>new</strong> notifications are fetched or refreshed.
+        </p>
+        <p>
+          <strong>Q: I set "Mark as Read", but I still see a red dot?</strong>
+          A: Auto-read notifications are removed from the unread count effectively. If you see a count, ensure the rule matched correctly or manually refresh.
+        </p>
+      </markdown-style>
+    </div>
+    <script src="js/demo-preview.js?v=1.34.4"></script>
+    <div class="footer warpper" style="max-width:720px;">Copyright © 2026 <a href="https://github.com/samzong" target="_blank">samzong</a><br>
+      <script>
+  function downloadLatest() {
+    const platform = navigator.platform.toLowerCase();
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    let downloadUrl = '';
+    
+    if (platform.includes('mac')) {
+      // macOS
+      if (userAgent.includes('arm') || userAgent.includes('apple')) {
+        downloadUrl = 'https://github.com/samzong/GitHubNotifier/releases/latest/download/GitHubNotifier-arm64.dmg';
+      } else {
+        downloadUrl = 'https://github.com/samzong/GitHubNotifier/releases/latest/download/GitHubNotifier-x86_64.dmg';
+      }
+    } else {
+      // other
+      window.open('https://github.com/samzong/GitHubNotifier/releases/latest', '_blank');
+      return;
+    }
+    window.location.href = downloadUrl;
+  }
+</script>
+    </div>
+    <script src="js/tocbot.js?v=1.34.4"></script>
+  </body>
+</html>
