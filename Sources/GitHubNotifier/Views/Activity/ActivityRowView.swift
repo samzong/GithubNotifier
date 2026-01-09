@@ -5,7 +5,6 @@ struct ActivityRowView: View {
     let item: SearchResultItem
     let onTap: () -> Void
 
-    @State private var isHovering = false
 
     var body: some View {
         Button(action: onTap) {
@@ -49,12 +48,8 @@ struct ActivityRowView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .background(isHovering ? Color(nsColor: .quinaryLabel) : Color.clear)
             .contentShape(Rectangle())
-            .onHover { hovering in
-                isHovering = hovering
-            }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.listRow)
     }
 }

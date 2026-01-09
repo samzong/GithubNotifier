@@ -293,19 +293,10 @@ struct MenuBarView: View {
         closeMenuBarWindow()
         openSettings()
 
+        // Activate the app to bring Settings window to front
+        // The Settings scene handles its own window management
         Task { @MainActor in
-            // Activate app first
             NSApplication.shared.activate(ignoringOtherApps: true)
-
-            // Wait for window to appear
-            try? await Task.sleep(for: .milliseconds(200))
-
-            if let settingsWindow = NSApplication.shared.windows.first(where: {
-                $0.title.contains("Settings") || $0.title.contains("设置")
-            }) {
-                settingsWindow.makeKeyAndOrderFront(nil)
-                settingsWindow.orderFrontRegardless()
-            }
         }
     }
 
