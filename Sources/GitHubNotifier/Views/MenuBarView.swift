@@ -241,46 +241,33 @@ struct MenuBarView: View {
     }
 
     private func webURL(for notification: GitHubNotification) -> URL? {
-        guard let apiURLString = notification.subject.url,
-              let apiURL = URL(string: apiURLString),
-              apiURL.host == "api.github.com" else {
-            return nil
-        }
-
-        let segments = apiURL.pathComponents
-        // pathComponents: ["/", "repos", "owner", "repo", "pulls", "1"]
-        guard segments.count >= 5, segments[1] == "repos" else {
-            return URL(string: apiURLString.replacingOccurrences(of: "api.github.com/repos", with: "github.com")
-                .replacingOccurrences(of: "api.github.com", with: "github.com"))
-        }
-
-        let owner = segments[2]
-        let repo = segments[3]
-        let rest = Array(segments.dropFirst(4))
-
-        if rest.count >= 2 {
-            let resource = rest[0]
-            let identifier = rest[1]
-
+        // Prefer constructing URL from known components
+        if let number = notification.issueOrPRNumber {
+            let baseURL = notification.repository.htmlUrl
             switch notification.notificationType {
             case .pullRequest:
-                if resource == "pulls" || resource == "issues" {
-                    return URL(string: "https://github.com/\(owner)/\(repo)/pull/\(identifier)")
-                }
+                return URL(string: "\(baseURL)/pull/\(number)")
             case .issue:
-                if resource == "issues" {
-                    return URL(string: "https://github.com/\(owner)/\(repo)/issues/\(identifier)")
-                }
+                return URL(string: "\(baseURL)/issues/\(number)")
+            case .commit:
+                // For commits finding the SHA from subject url is safer than fragile parsing
+                // But given we don't have SHA easily available in top level model without parsing subject.url,
+                // we'll fallback to a safer subject.url replacement or just repository root if complex.
+                break
             default:
                 break
             }
-
-            let mappedResource = resource == "pulls" ? "pull" : resource
-            let path = ([owner, repo, mappedResource] + Array(rest.dropFirst(1))).joined(separator: "/")
-            return URL(string: "https://github.com/\(path)")
         }
 
-        return URL(string: "https://github.com/\(owner)/\(repo)")
+        // Fallback: If we have subject.url (API URL), try to convert to HTML URL generally
+        if let apiURLString = notification.subject.url {
+             return URL(string: apiURLString
+                 .replacingOccurrences(of: "api.github.com/repos", with: "github.com")
+                 .replacingOccurrences(of: "/pulls/", with: "/pull/") // API uses pulls, HTML uses pull
+             )
+        }
+
+        return URL(string: notification.repository.htmlUrl)
     }
 
     private func clearInitialFocus() {

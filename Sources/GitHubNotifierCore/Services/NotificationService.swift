@@ -81,6 +81,7 @@ public class NotificationService {
             }
 
             notifications = fetchedNotifications
+            pruneStaleCache()
 
             await loadNotificationDetails()
         } catch {
@@ -114,15 +115,15 @@ public class NotificationService {
             switch notification.notificationType {
             case .pullRequest:
                 type = .pullRequest
-                let cacheKey = "\(owner)/\(repo)/pr/\(number)"
-                if detailsCache[cacheKey] == nil {
-                    requests.append((cacheKey, owner, repo, number, type))
+                let key = cacheKey(owner: owner, repo: repo, type: .pullRequest, number: number)
+                if detailsCache[key] == nil {
+                    requests.append((key, owner, repo, number, type))
                 }
             case .issue:
                 type = .issue
-                let cacheKey = "\(owner)/\(repo)/issue/\(number)"
-                if detailsCache[cacheKey] == nil {
-                    requests.append((cacheKey, owner, repo, number, type))
+                let key = cacheKey(owner: owner, repo: repo, type: .issue, number: number)
+                if detailsCache[key] == nil {
+                    requests.append((key, owner, repo, number, type))
                 }
             default:
                 continue
@@ -164,9 +165,9 @@ public class NotificationService {
 
         let owner = notification.repository.owner.login
         let repo = notification.repository.name
-        let cacheKey = "\(owner)/\(repo)/pr/\(number)"
+        let key = cacheKey(owner: owner, repo: repo, type: .pullRequest, number: number)
 
-        return prStateCache[cacheKey]
+        return prStateCache[key]
     }
 
     public func getIssueState(for notification: GitHubNotification) -> IssueState? {
@@ -177,9 +178,9 @@ public class NotificationService {
 
         let owner = notification.repository.owner.login
         let repo = notification.repository.name
-        let cacheKey = "\(owner)/\(repo)/issue/\(number)"
+        let key = cacheKey(owner: owner, repo: repo, type: .issue, number: number)
 
-        return issueStateCache[cacheKey]
+        return issueStateCache[key]
     }
 
     public func getNotificationDetails(for notification: GitHubNotification) -> NotificationDetails? {
@@ -187,10 +188,10 @@ public class NotificationService {
         let repo = notification.repository.name
         guard let number = notification.issueOrPRNumber else { return nil }
 
-        let prefix = notification.notificationType == .pullRequest ? "pr" : "issue"
-        let cacheKey = "\(owner)/\(repo)/\(prefix)/\(number)"
+        let type: NotificationSubjectType = notification.notificationType == .pullRequest ? .pullRequest : .issue
+        let key = cacheKey(owner: owner, repo: repo, type: type, number: number)
 
-        return detailsCache[cacheKey]
+        return detailsCache[key]
     }
 
     public func markAsRead(notification: GitHubNotification) async {
@@ -324,6 +325,35 @@ public class NotificationService {
             .closedCompleted
         default:
             .open
+        }
+    }
+
+    private func cacheKey(owner: String, repo: String, type: NotificationSubjectType, number: Int) -> String {
+        let prefix = type == .pullRequest ? "pr" : "issue"
+        return "\(owner)/\(repo)/\(prefix)/\(number)"
+    }
+
+    private func pruneStaleCache() {
+        // Collect all active keys from current notifications
+        var activeKeys: Set<String> = []
+        for notification in notifications {
+            guard let number = notification.issueOrPRNumber else { continue }
+            let owner = notification.repository.owner.login
+            let repo = notification.repository.name
+            let type: NotificationSubjectType = notification.notificationType == .pullRequest ? .pullRequest : .issue
+            activeKeys.insert(cacheKey(owner: owner, repo: repo, type: type, number: number))
+        }
+
+        // Remove cache entries that are no longer in active keys
+        // Note: This is a simple strategy. For more robustness, we might want to keep them for a while.
+        // But since we persist nothing and this is an in-memory session cache, syncing with 'notifications' list is acceptable.
+        
+        let keysToRemove = Set(detailsCache.keys).subtracting(activeKeys)
+        
+        for key in keysToRemove {
+            detailsCache.removeValue(forKey: key)
+            prStateCache.removeValue(forKey: key)
+            issueStateCache.removeValue(forKey: key)
         }
     }
 }
