@@ -11,6 +11,8 @@ struct NotificationRowView: View {
         group.latestNotification
     }
 
+    @State private var isHovering = false
+
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .top, spacing: 8) {
@@ -22,28 +24,30 @@ struct NotificationRowView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
                         Text(notification.repository.name)
-                            .font(.system(size: 11))
+                            .font(.caption)
                             .foregroundStyle(.secondary)
 
                         if let number = notification.issueOrPRNumber {
                             Text("#\(number)")
-                                .font(.system(size: 11))
+                                .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }
 
                         if group.notifications.count > 1 {
                             Text("(\(group.notifications.count))")
-                                .font(.system(size: 10))
+                                .font(.caption2)
                                 .foregroundStyle(.tertiary)
                         }
 
                         Spacer()
 
                         TimeAgoText(date: notification.updatedAt)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
 
                     Text(notification.subject.title)
-                        .font(.system(size: 13))
+                        .font(.body)
                         .foregroundStyle(.primary)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -56,7 +60,11 @@ struct NotificationRowView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
+            .background(isHovering ? Color(nsColor: .quinaryLabel) : Color.clear)
             .contentShape(Rectangle())
+            .onHover { hovering in
+                isHovering = hovering
+            }
         }
         .buttonStyle(.plain)
     }

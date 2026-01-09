@@ -177,7 +177,14 @@ struct MenuBarView: View {
         case .notifications:
             await notificationService.fetchNotifications()
         case .activity:
-            await activityService.fetchMyItems()
+            switch selectedSubTab {
+            case .all:
+                await activityService.fetchMyItems()
+            case .issues:
+                await activityService.fetchMyItems(type: .issue)
+            case .prs:
+                await activityService.fetchMyItems(type: .pullRequest)
+            }
         }
     }
 

@@ -15,18 +15,18 @@ struct HeaderView: View {
         HStack {
             HStack(spacing: 4) {
                 TabButton(
-                    title: "menubar.tab.activity".localized,
-                    icon: "list.bullet.rectangle",
-                    isSelected: selectedTab == .activity,
-                    action: { selectedTab = .activity }
-                )
-
-                TabButton(
                     title: "menubar.tab.notifications".localized,
                     icon: "bell",
                     isSelected: selectedTab == .notifications,
                     showDot: unreadCount > 0,
                     action: { selectedTab = .notifications }
+                )
+
+                TabButton(
+                    title: "menubar.tab.activity".localized,
+                    icon: "list.bullet.rectangle",
+                    isSelected: selectedTab == .activity,
+                    action: { selectedTab = .activity }
                 )
             }
 
@@ -80,6 +80,6 @@ struct HeaderView: View {
         }
         .frame(height: 48)
         .padding(.horizontal, 12)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+        .background(.regularMaterial)
     }
 }

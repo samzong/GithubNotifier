@@ -15,13 +15,45 @@ public enum MyItemsFilter: String, CaseIterable, Sendable {
 @MainActor
 public class MyItemsService {
     // Unified items (all combined, deduplicated)
-    public private(set) var items: [SearchResultItem] = []
+    public var items: [SearchResultItem] {
+        let all = (createdItems + assignedItems + mentionedItems + reviewRequestedItems)
+        var seenIds = Set<String>()
+        var merged: [SearchResultItem] = []
+        for item in all {
+            if !seenIds.contains(item.id) {
+                seenIds.insert(item.id)
+                merged.append(item)
+            }
+        }
+        return merged.sorted { $0.updatedAt > $1.updatedAt }
+    }
 
-    // Category-separated storage (for quick filtering)
-    public private(set) var createdItems: [SearchResultItem] = []
-    public private(set) var assignedItems: [SearchResultItem] = []
-    public private(set) var mentionedItems: [SearchResultItem] = []
-    public private(set) var reviewRequestedItems: [SearchResultItem] = []
+    // Category-separated storage (computed from underlying typed storage)
+    public var createdItems: [SearchResultItem] {
+        (createdIssues + createdPRs).sorted { $0.updatedAt > $1.updatedAt }
+    }
+    public var assignedItems: [SearchResultItem] {
+        (assignedIssues + assignedPRs).sorted { $0.updatedAt > $1.updatedAt }
+    }
+    public var mentionedItems: [SearchResultItem] {
+        (mentionedIssues + mentionedPRs).sorted { $0.updatedAt > $1.updatedAt }
+    }
+    public var reviewRequestedItems: [SearchResultItem] {
+        reviewRequestedPRs.sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    // Underlying typed storage
+    private var createdIssues: [SearchResultItem] = []
+    private var createdPRs: [SearchResultItem] = []
+    
+    private var assignedIssues: [SearchResultItem] = []
+    private var assignedPRs: [SearchResultItem] = []
+    
+    private var mentionedIssues: [SearchResultItem] = []
+    private var mentionedPRs: [SearchResultItem] = []
+    
+    // Review requested is only for PRs
+    private var reviewRequestedPRs: [SearchResultItem] = []
 
     public private(set) var isLoading = false
     public private(set) var errorMessage: String?
@@ -36,16 +68,18 @@ public class MyItemsService {
 
     public func clearToken() {
         graphqlClient = nil
-        items = []
-        createdItems = []
-        assignedItems = []
-        mentionedItems = []
-        reviewRequestedItems = []
+        createdIssues = []
+        createdPRs = []
+        assignedIssues = []
+        assignedPRs = []
+        mentionedIssues = []
+        mentionedPRs = []
+        reviewRequestedPRs = []
         errorMessage = nil
     }
 
-    /// Fetch all user-related Issues and Pull Requests
-    public func fetchMyItems() async {
+    /// Fetch user-related Items, optionally filtered by type
+    public func fetchMyItems(type: SearchResultItem.ItemType? = nil) async {
         guard let graphqlClient else {
             errorMessage = "Not authenticated"
             return
@@ -55,34 +89,31 @@ public class MyItemsService {
         errorMessage = nil
 
         do {
-            // Parallel fetch for all query types
-            async let created = graphqlClient.search(query: "is:open author:@me", first: 30)
-            async let assigned = graphqlClient.search(query: "is:open assignee:@me", first: 30)
-            async let mentioned = graphqlClient.search(query: "is:open mentions:@me", first: 30)
-            async let reviewRequested = graphqlClient.search(query: "is:open review-requested:@me", first: 30)
+            if type == nil || type == .issue {
+                async let created = graphqlClient.search(query: "is:open is:issue author:@me", first: 30)
+                async let assigned = graphqlClient.search(query: "is:open is:issue assignee:@me", first: 30)
+                async let mentioned = graphqlClient.search(query: "is:open is:issue mentions:@me", first: 30)
 
-            createdItems = try await created
-            assignedItems = try await assigned
-            mentionedItems = try await mentioned
-            reviewRequestedItems = try await reviewRequested
-
-            // Merge and deduplicate for unified view
-            var seenIds = Set<String>()
-            var mergedItems: [SearchResultItem] = []
-
-            for batch in [createdItems, assignedItems, mentionedItems, reviewRequestedItems] {
-                for item in batch {
-                    if !seenIds.contains(item.id) {
-                        seenIds.insert(item.id)
-                        mergedItems.append(item)
-                    }
-                }
+                createdIssues = try await created
+                assignedIssues = try await assigned
+                mentionedIssues = try await mentioned
             }
 
-            // Sort by updatedAt descending
-            items = mergedItems.sorted { $0.updatedAt > $1.updatedAt }
+            if type == nil || type == .pullRequest {
+                async let created = graphqlClient.search(query: "is:open is:pr author:@me", first: 30)
+                async let assigned = graphqlClient.search(query: "is:open is:pr assignee:@me", first: 30)
+                async let mentioned = graphqlClient.search(query: "is:open is:pr mentions:@me", first: 30)
+                async let reviewRequested = graphqlClient.search(query: "is:open is:pr review-requested:@me", first: 30)
+
+                createdPRs = try await created
+                assignedPRs = try await assigned
+                mentionedPRs = try await mentioned
+                reviewRequestedPRs = try await reviewRequested
+            }
+            
         } catch {
             errorMessage = error.localizedDescription
+            print("Error fetching items: \(error)")
         }
 
         isLoading = false

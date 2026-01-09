@@ -45,9 +45,10 @@ struct SubTabPickerView: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 10))
+                    .font(.caption2)
                 Text("\(title) (\(count))")
-                    .font(.system(size: 11, weight: isSelected ? .medium : .regular))
+                    .font(.caption)
+                    .fontWeight(isSelected ? .medium : .regular)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -58,7 +59,7 @@ struct SubTabPickerView: View {
             )
             .foregroundStyle(isSelected ? .primary : .secondary)
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .shadow(color: isSelected ? .black.opacity(0.08) : .clear, radius: 1, y: 0.5)
+            .shadow(color: isSelected ? .black.opacity(0.12) : .clear, radius: 1, y: 0.5)
         }
         .buttonStyle(.plain)
     }

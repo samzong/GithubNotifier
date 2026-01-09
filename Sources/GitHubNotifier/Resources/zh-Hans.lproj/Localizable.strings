@@ -4,6 +4,7 @@
 /* Settings Tabs */
 "settings.tab.general" = "通用";
 "settings.tab.account" = "账户";
+"settings.user" = "用户";
 "settings.tab.about" = "关于";
 
 /* About Tab */

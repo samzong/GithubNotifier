@@ -39,11 +39,11 @@ struct FilterBarView: View {
         } label: {
             HStack(spacing: 4) {
                 Text(filter.displayName)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.caption.weight(.medium))
 
                 if count > 0 {
                     Text("(\(count))")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
             }

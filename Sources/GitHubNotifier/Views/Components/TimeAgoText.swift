@@ -5,8 +5,6 @@ struct TimeAgoText: View {
 
     var body: some View {
         Text(formattedTimeAgo)
-            .font(.system(size: 11))
-            .foregroundStyle(.tertiary)
     }
 
     private var formattedTimeAgo: String {

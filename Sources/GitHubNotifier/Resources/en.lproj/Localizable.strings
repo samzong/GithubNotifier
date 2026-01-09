@@ -4,6 +4,7 @@
 /* Settings Tabs */
 "settings.tab.general" = "General";
 "settings.tab.account" = "Account";
+"settings.user" = "User";
 "settings.tab.about" = "About";
 
 /* About Tab */
