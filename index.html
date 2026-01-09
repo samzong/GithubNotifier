@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHubNotifier GitHubNotifier</title>
+    <meta name="description" content="A lightweight macOS menubar hub for your GitHub works. Menubar-first workflow, Unified Issues/PRs list, and more.">
+    <meta name="keywords" content="macOS, GitHub, Notifier, Menubar, SwiftUI, Developer Tools">
+    <link rel="stylesheet" type="text/css" href="css/main.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/tocbot.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/media.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/sidebar.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/copy.css?v=1.34.4">
+    <link rel="stylesheet" type="text/css" href="css/demo-preview.css?v=1.34.4">
+    <link rel="icon" href="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png" type="image/x-icon">
+    <script src="js/copy.js?v=1.34.4"></script>
+    <script src="js/dark-mode.js?v=1.34.4"></script>
+    <script src="js/markdown-style.js?v=1.34.4"></script>
+  </head>
+  <body id="idoctotop"><a href="#idoctotop" class="gototop">top</a>
+    <header class="header">
+      <article class="inner warpper" style="max-width:720px;"><a class="logo" href="index.html"><img alt="GitHubNotifier logo" src="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png">
+<span class="title">GitHubNotifier</span></a>
+        <div class="content">
+          <ul class="menu">
+            <li><a href="index.html" target="" class="active">Home</a></li>
+            <li><a href="https://github.com/samzong" target="__blank" class="">About</a></li>
+          </ul><a href="https://github.com/samzong/GitHubNotifier" target="_blank" rel="noopener noreferrer" title="Github" name="Github" class="github"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+            </svg></a>
+          <dark-mode permanent=""></dark-mode>
+        </div>
+      </article>
+    </header>
+    <div style="max-width:720px;" class="warpper-content warpper notocs">
+      <markdown-style theme-auto-switch-disabled="">
+        <h1 id="githubnotifier"><a aria-hidden="true" tabindex="-1" href="#githubnotifier" class="anchor"><span class="icon icon-link"></span></a>GitHubNotifier</h1>
+        <div align="center">
+          <img src="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png" alt="GitHubNotifier" width="128"><br>
+          <div id="download-section" style="margin: 20px 0;"><a href="https://github.com/samzong/GitHubNotifier/releases/latest" style="text-decoration: none;"><img src="https://img.shields.io/badge/⬇%20Download%20for%20macOS-28a745?style=for-the-badge&#x26;labelColor=28a745" alt="Download"></a></div>
+          <p>A lightweight macOS menubar hub for your GitHub works.</p>
+          <p>
+            <a href="https://github.com/samzong/GitHubNotifier/releases"><img src="https://img.shields.io/github/v/release/samzong/GitHubNotifier" alt="Release"></a>
+            <a href="https://github.com/samzong/GitHubNotifier/blob/main/LICENSE"><img src="https://img.shields.io/github/license/samzong/GitHubNotifier" alt="License"></a>
+            <a href="https://deepwiki.com/samzong/GitHubNotifier"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+          </p>
+        </div>
+        <h2 id="screenshots"><a aria-hidden="true" tabindex="-1" href="#screenshots" class="anchor"><span class="icon icon-link"></span></a>Screenshots</h2>
+        <p align="center">
+          <img src="images/notifications.png" width="45%">
+          <img src="images/activities.png" width="45%">
+        </p>
+        <h2 id="design-principles"><a aria-hidden="true" tabindex="-1" href="#design-principles" class="anchor"><span class="icon icon-link"></span></a>Design Principles</h2>
+        <ul>
+          <li>Menubar is the single entry point and attention anchor</li>
+          <li>30-second rule: core flows should finish within half a minute</li>
+          <li>Keep it lightweight: do triage here, deep work in GitHub</li>
+          <li>Use-and-go: quick actions in a transient window, not a permanent workspace</li>
+          <li>Highlight developer hierarchy: core maintainers vs. casual contributors</li>
+        </ul>
+        <h2 id="current-capabilities"><a aria-hidden="true" tabindex="-1" href="#current-capabilities" class="anchor"><span class="icon icon-link"></span></a>Current Capabilities</h2>
+        <ul>
+          <li>Menubar-first workflow with Notifications and Activities tabs</li>
+          <li>Unified Issues/PRs list with quick filters</li>
+          <li>Status cache and CI check summary in list items</li>
+          <li>GraphQL Search API wrapper for cross-repo queries</li>
+          <li>Auto-updates via Sparkle</li>
+          <li>i18n support (EN / zh-Hans)</li>
+        </ul>
+        <h2 id="next-up"><a aria-hidden="true" tabindex="-1" href="#next-up" class="anchor"><span class="icon icon-link"></span></a>Next Up</h2>
+        <ul>
+          <li>User relationship model + key developer highlighting</li>
+          <li>Activities dashboard expansion</li>
+          <li>Longer-term: activity feeds, lightweight repo kanban, advanced search, AI companion</li>
+        </ul>
+        <h2 id="requirements"><a aria-hidden="true" tabindex="-1" href="#requirements" class="anchor"><span class="icon icon-link"></span></a>Requirements</h2>
+        <ul>
+          <li>macOS 15+</li>
+        </ul>
+      </markdown-style>
+    </div>
+    <script src="js/demo-preview.js?v=1.34.4"></script>
+    <div class="footer warpper" style="max-width:720px;">Copyright © 2026 <a href="https://github.com/samzong" target="_blank">samzong</a><br>
+      <script>
+  function downloadLatest() {
+    const platform = navigator.platform.toLowerCase();
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    let downloadUrl = '';
+    
+    if (platform.includes('mac')) {
+      // macOS
+      if (userAgent.includes('arm') || userAgent.includes('apple')) {
+        downloadUrl = 'https://github.com/samzong/GitHubNotifier/releases/latest/download/GitHubNotifier-arm64.dmg';
+      } else {
+        downloadUrl = 'https://github.com/samzong/GitHubNotifier/releases/latest/download/GitHubNotifier-x86_64.dmg';
+      }
+    } else {
+      // other
+      window.open('https://github.com/samzong/GitHubNotifier/releases/latest', '_blank');
+      return;
+    }
+    window.location.href = downloadUrl;
+  }
+</script>
+    </div>
+    <script src="js/tocbot.js?v=1.34.4"></script>
+  </body>
+</html>
