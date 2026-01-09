@@ -42,7 +42,7 @@
 
 /* Menu Bar View */
 "menubar.title" = "通知";
-"menubar.loading" = "正在加载通知...";
+"menubar.loading" = "正在加载...";
 "menubar.empty.title" = "没有未读通知";
 "menubar.empty.subtitle" = "全部看完了！";
 "menubar.error.title" = "错误";
@@ -59,7 +59,6 @@
 "menubar.tab.notifications" = "通知";
 "menubar.tab.activity" = "动态";
 "menubar.no_items" = "暂无相关条目";
-"menubar.no_notifications" = "暂无通知";
 "menubar.filter.all" = "全部";
 "menubar.filter.created" = "创建";
 "menubar.filter.assigned" = "指派";

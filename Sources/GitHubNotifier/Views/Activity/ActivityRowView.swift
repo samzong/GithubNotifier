@@ -69,7 +69,7 @@ struct ActivityRowView: View {
             // However, 16pt is a specific icon size. Let's use .title3 which is ~20pt or .headline ~17pt.
             // Actually, keep .system(size: 16) for icons as they often need fixed visual weight, or use .callout.
             // Let's use .system(size: 16) to ensure layout stability for now, or match text.
-            .font(.system(size: 16)) 
+            .font(.system(size: 16))
             .foregroundStyle(color)
     }
 

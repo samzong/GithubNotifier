@@ -19,11 +19,9 @@ public class ActivityService {
         let all = (createdItems + assignedItems + mentionedItems + reviewRequestedItems)
         var seenIds = Set<String>()
         var merged: [SearchResultItem] = []
-        for item in all {
-            if !seenIds.contains(item.id) {
-                seenIds.insert(item.id)
-                merged.append(item)
-            }
+        for item in all where !seenIds.contains(item.id) {
+            seenIds.insert(item.id)
+            merged.append(item)
         }
         return merged.sorted { $0.updatedAt > $1.updatedAt }
     }
@@ -32,12 +30,15 @@ public class ActivityService {
     public var createdItems: [SearchResultItem] {
         (createdIssues + createdPRs).sorted { $0.updatedAt > $1.updatedAt }
     }
+
     public var assignedItems: [SearchResultItem] {
         (assignedIssues + assignedPRs).sorted { $0.updatedAt > $1.updatedAt }
     }
+
     public var mentionedItems: [SearchResultItem] {
         (mentionedIssues + mentionedPRs).sorted { $0.updatedAt > $1.updatedAt }
     }
+
     public var reviewRequestedItems: [SearchResultItem] {
         reviewRequestedPRs.sorted { $0.updatedAt > $1.updatedAt }
     }
@@ -45,13 +46,13 @@ public class ActivityService {
     // Underlying typed storage
     private var createdIssues: [SearchResultItem] = []
     private var createdPRs: [SearchResultItem] = []
-    
+
     private var assignedIssues: [SearchResultItem] = []
     private var assignedPRs: [SearchResultItem] = []
-    
+
     private var mentionedIssues: [SearchResultItem] = []
     private var mentionedPRs: [SearchResultItem] = []
-    
+
     // Review requested is only for PRs
     private var reviewRequestedPRs: [SearchResultItem] = []
 
@@ -110,7 +111,7 @@ public class ActivityService {
                 mentionedPRs = try await mentioned
                 reviewRequestedPRs = try await reviewRequested
             }
-            
+
         } catch {
             errorMessage = error.localizedDescription
             print("Error fetching items: \(error)")

@@ -42,7 +42,7 @@
 
 /* Menu Bar View */
 "menubar.title" = "Notifications";
-"menubar.loading" = "Loading notifications...";
+"menubar.loading" = "Loading...";
 "menubar.empty.title" = "No Unread Notifications";
 "menubar.empty.subtitle" = "All caught up!";
 "menubar.error.title" = "Error";
@@ -57,9 +57,8 @@
 "menubar.tab.issues" = "Issues";
 "menubar.tab.prs" = "PRs";
 "menubar.tab.notifications" = "Notifications";
-"menubar.tab.activity" = "Activity";
+"menubar.tab.activity" = "Activities";
 "menubar.no_items" = "No items found";
-"menubar.no_notifications" = "No notifications";
 "menubar.filter.all" = "All";
 "menubar.filter.created" = "Created";
 "menubar.filter.assigned" = "Assigned";

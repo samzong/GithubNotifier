@@ -74,7 +74,7 @@ struct NotificationListView: View {
             Image(systemName: "tray")
                 .font(.title2)
                 .foregroundStyle(.secondary)
-            Text("menubar.no_notifications".localized)
+            Text("menubar.no_items".localized)
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
