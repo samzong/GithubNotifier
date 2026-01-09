@@ -144,10 +144,11 @@ struct SettingsView: View {
         VStack(spacing: 20) {
             Spacer()
 
-            // App Logo placeholder
-            Image(systemName: "bell.badge.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.blue)
+            // App Logo
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 64, height: 64)
 
             // App Name
             Text("GitHubNotifier")
