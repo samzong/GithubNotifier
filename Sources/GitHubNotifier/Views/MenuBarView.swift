@@ -52,6 +52,7 @@ struct MenuBarView: View {
                     set: { selectedSubTab = $0 }
                 ),
                 mainTab: selectedMainTab,
+                allCount: currentAllCount,
                 issuesCount: currentIssuesCount,
                 prsCount: currentPrsCount,
                 isMarkingAsRead: isMarkingAsRead,
@@ -80,7 +81,10 @@ struct MenuBarView: View {
             clearInitialFocus()
             await initialLoad()
         }
-        .onChange(of: selectedMainTab) { _, _ in
+        .onChange(of: selectedMainTab) { _, newTab in
+            if newTab == .activity && selectedSubTab == .all {
+                selectedSubTab = .issues
+            }
             Task { await refreshCurrentTab() }
         }
     }
@@ -103,6 +107,15 @@ struct MenuBarView: View {
                 openNotificationGroup(group)
             }
             .environment(notificationService)
+        }
+    }
+
+    private var currentAllCount: Int {
+        switch selectedMainTab {
+        case .notifications:
+            notificationService.unreadCount
+        case .activity:
+            activityService.items(for: .all).count
         }
     }
 

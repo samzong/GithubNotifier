@@ -5,6 +5,7 @@ struct SubTabPickerView: View {
     @Binding var selectedSubTab: MenuBarSubTab
 
     let mainTab: MenuBarMainTab
+    let allCount: Int
     let issuesCount: Int
     let prsCount: Int
     let isMarkingAsRead: Bool
@@ -27,6 +28,9 @@ struct SubTabPickerView: View {
 
     private var segmentedControl: some View {
         HStack(spacing: 2) {
+            if mainTab == .notifications {
+                segmentButton("menubar.tab.all".localized, tab: .all, count: allCount, icon: "tray")
+            }
             segmentButton("menubar.tab.prs".localized, tab: .prs, count: prsCount, icon: "arrow.triangle.pull")
             segmentButton("menubar.tab.issues".localized, tab: .issues, count: issuesCount, icon: "exclamationmark.circle")
         }

@@ -106,8 +106,20 @@ struct NotificationRowView: View {
             return ("arrow.triangle.pull", .green)
         case .issue:
             return ("circle.dotted", .green)
-        default:
-            return ("bell", .secondary)
+        case .commit:
+            return ("arrow.triangle.branch", .secondary)
+        case .release:
+            return ("tag", .blue)
+        case .discussion:
+            return ("bubble.left.and.bubble.right", .indigo)
+        case .checkSuite:
+            return ("checkmark.seal", .secondary)
+        case .repositoryInvitation:
+            return ("envelope", .yellow)
+        case .repositoryVulnerabilityAlert:
+            return ("shield.lefthalf.filled.trianglebadge.exclamationmark", .red)
+        case .unknown:
+            return ("questionmark.circle", .secondary)
         }
     }
 }
