@@ -13,7 +13,7 @@ import SwiftUI
 @main
 struct GitHubNotifierApp: App {
     @State private var notificationService: NotificationService
-    @State private var activityService: MyItemsService
+    @State private var activityService: ActivityService
 
     /// Sparkle updater controller for automatic updates
     private let updaterController: SPUStandardUpdaterController
@@ -30,7 +30,7 @@ struct GitHubNotifierApp: App {
         let service = NotificationService(token: token)
         _notificationService = State(initialValue: service)
 
-        let itemsService = MyItemsService()
+        let itemsService = ActivityService()
         if let token {
             itemsService.configure(token: token)
         }

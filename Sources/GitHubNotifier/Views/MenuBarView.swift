@@ -4,7 +4,7 @@ import SwiftUI
 
 struct MenuBarView: View {
     @Environment(NotificationService.self) private var notificationService
-    @Environment(MyItemsService.self) private var activityService
+    @Environment(ActivityService.self) private var activityService
     @Environment(\.openSettings) private var openSettings
     @Environment(\.dismiss) private var dismiss
 

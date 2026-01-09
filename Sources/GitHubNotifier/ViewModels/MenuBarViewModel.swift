@@ -6,7 +6,7 @@ import SwiftUI
 @Observable
 final class MenuBarViewModel {
     private let notificationService: NotificationService
-    private let activityService: MyItemsService
+    private let activityService: ActivityService
 
     var selectedMainTab: MenuBarMainTab = .activity
     var selectedSubTab: MenuBarSubTab = .issues
@@ -86,7 +86,7 @@ final class MenuBarViewModel {
         ]
     }
 
-    init(notificationService: NotificationService, activityService: MyItemsService) {
+    init(notificationService: NotificationService, activityService: ActivityService) {
         self.notificationService = notificationService
         self.activityService = activityService
     }

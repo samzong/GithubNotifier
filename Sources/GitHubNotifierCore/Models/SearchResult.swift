@@ -1,7 +1,7 @@
 import Foundation
 
 /// Unified search result item for PR or Issue
-/// Used by MyItemsService to display user-related items
+/// Used by ActivityService to display user-related items
 public struct SearchResultItem: Identifiable, Sendable, Hashable {
     public let id: String
     public let number: Int

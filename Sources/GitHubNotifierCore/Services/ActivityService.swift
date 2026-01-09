@@ -13,7 +13,7 @@ public enum MyItemsFilter: String, CaseIterable, Sendable {
 /// Aggregates results from author:@me, assignee:@me, mentions:@me queries
 @Observable
 @MainActor
-public class MyItemsService {
+public class ActivityService {
     // Unified items (all combined, deduplicated)
     public var items: [SearchResultItem] {
         let all = (createdItems + assignedItems + mentionedItems + reviewRequestedItems)

@@ -3,7 +3,7 @@ import GitHubNotifierCore
 import SwiftUI
 
 struct ActivityListView: View {
-    @Environment(MyItemsService.self) private var service
+    @Environment(ActivityService.self) private var service
 
     let subTab: MenuBarSubTab
     let filter: ActivityFilter
