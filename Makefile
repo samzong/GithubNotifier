@@ -66,7 +66,7 @@ build:
 build-release:
 	@echo "🔨 Building $(APP_NAME) (release)..."
 	swift build -c release
-	./Scripts/package_app.sh release
+	VERSION=$(VERSION) BUILD_NUMBER=$(BUILD_NUMBER) ./Scripts/package_app.sh release
 	@echo "✅ Build completed!"
 	@echo "📍 Application: $(RELEASE_APP)"
 
