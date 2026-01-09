@@ -41,6 +41,10 @@
 
 /* Account Tab */
 "settings.token.title" = "个人令牌:";
+"account.token.clear" = "清除令牌";
+"account.token.clear.title" = "清除令牌？";
+"account.token.clear.message" = "这将移除您的 GitHub 令牌并退出登录。";
+"account.token.clear.confirm" = "清除";
 
 "settings.token.generate.link" = "如何生成令牌？";
 
@@ -147,6 +151,45 @@
 "rules.editor.logic" = "逻辑";
 "rules.editor.actions" = "动作";
 "rules.editor.value" = "值";
+
+/* Welcome View */
+"welcome.title" = "欢迎使用 GitHubNotifier";
+"welcome.subtitle" = "在菜单栏中实时监控 GitHub 通知";
+"welcome.setup.hint" = "配置 GitHub 令牌以开始使用";
+"welcome.open.settings" = "打开设置";
+
+/* Account Tab - Status */
+"account.status.header" = "连接状态";
+"account.status.connected" = "已连接为";
+"account.status.not_configured" = "令牌未配置";
+"account.status.verifying" = "验证中...";
+
+/* Account Tab - Auth Method */
+"account.auth.header" = "认证方式";
+
+/* Account Tab - Permissions */
+"account.permissions.header" = "所需权限";
+"account.permissions.footer" = "完整功能需要 repo 权限以访问私有仓库";
+"account.permissions.classic.title" = "Classic Token（推荐）";
+"account.permissions.finegrained.title" = "Fine-grained Token";
+"account.perm.notifications" = "读取通知";
+"account.perm.read_user" = "读取用户资料";
+"account.perm.repo" = "访问私有仓库详情";
+"account.perm.fg.notifications" = "读取通知";
+"account.perm.fg.email" = "读取邮箱地址";
+"account.perm.fg.repo" = "读取仓库内容（私有仓库）";
+"account.perm.required" = "必需";
+"account.perm.recommended" = "推荐";
+"account.perm.optional" = "可选";
+
+/* Account Tab - Generate */
+"account.generate.header" = "生成令牌";
+"account.generate.classic" = "生成令牌";
+"account.generate.finegrained" = "生成令牌";
+
+/* Account Tab - Web Auth */
+"account.webauth.coming_soon" = "即将推出";
+"account.webauth.description" = "直接使用 GitHub 账户登录，无需令牌";
 
 /* Common */
 "common.cancel" = "取消";

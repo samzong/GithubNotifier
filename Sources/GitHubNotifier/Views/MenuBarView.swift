@@ -14,6 +14,10 @@ struct MenuBarView: View {
 
     @State private var isMarkingAsRead = false
 
+    private var hasToken: Bool {
+        KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey) != nil
+    }
+
     private var selectedMainTab: MenuBarMainTab {
         get { MenuBarMainTab(rawValue: selectedMainTabRawValue) ?? .activity }
         nonmutating set { selectedMainTabRawValue = newValue.rawValue }
@@ -31,50 +35,54 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HeaderView(
-                selectedTab: Binding(
-                    get: { selectedMainTab },
-                    set: { selectedMainTab = $0 }
-                ),
-                unreadCount: notificationService.unreadCount,
-                isLoading: notificationService.isLoading || activityService.isLoading,
-                currentUserLogin: notificationService.currentUser?.login,
-                onRefresh: refreshCurrentTab,
-                onOpenSettings: { openSettingsAndBringToFront() },
-                onQuit: { NSApplication.shared.terminate(nil) }
-            )
-
-            Divider()
-
-            SubTabPickerView(
-                selectedSubTab: Binding(
-                    get: { selectedSubTab },
-                    set: { selectedSubTab = $0 }
-                ),
-                mainTab: selectedMainTab,
-                allCount: currentAllCount,
-                issuesCount: currentIssuesCount,
-                prsCount: currentPrsCount,
-                isMarkingAsRead: isMarkingAsRead,
-                onMarkAsRead: markFilteredAsRead,
-                onOpenRules: { openSettingsAndBringToFront(tab: .rules) }
-            )
-
-            if selectedMainTab == .activity {
-                FilterBarView(
-                    selectedFilter: Binding(
-                        get: { selectedActivityFilter },
-                        set: { selectedActivityFilter = $0 }
+            if hasToken {
+                HeaderView(
+                    selectedTab: Binding(
+                        get: { selectedMainTab },
+                        set: { selectedMainTab = $0 }
                     ),
-                    filterCounts: filterCounts
+                    unreadCount: notificationService.unreadCount,
+                    isLoading: notificationService.isLoading || activityService.isLoading,
+                    currentUserLogin: notificationService.currentUser?.login,
+                    onRefresh: refreshCurrentTab,
+                    onOpenSettings: { openSettingsAndBringToFront() },
+                    onQuit: { NSApplication.shared.terminate(nil) }
                 )
+
                 Divider()
+
+                SubTabPickerView(
+                    selectedSubTab: Binding(
+                        get: { selectedSubTab },
+                        set: { selectedSubTab = $0 }
+                    ),
+                    mainTab: selectedMainTab,
+                    allCount: currentAllCount,
+                    issuesCount: currentIssuesCount,
+                    prsCount: currentPrsCount,
+                    isMarkingAsRead: isMarkingAsRead,
+                    onMarkAsRead: markFilteredAsRead,
+                    onOpenRules: { openSettingsAndBringToFront(tab: .rules) }
+                )
+
+                if selectedMainTab == .activity {
+                    FilterBarView(
+                        selectedFilter: Binding(
+                            get: { selectedActivityFilter },
+                            set: { selectedActivityFilter = $0 }
+                        ),
+                        filterCounts: filterCounts
+                    )
+                    Divider()
+                }
+
+                Divider()
+
+                contentView
+                    .frame(maxHeight: .infinity, alignment: .top)
+            } else {
+                WelcomeView(onOpenSettings: { openSettingsAndBringToFront(tab: .account) })
             }
-
-            Divider()
-
-            contentView
-                .frame(maxHeight: .infinity, alignment: .top)
         }
         .frame(width: 360, height: 520)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -261,10 +269,10 @@ struct MenuBarView: View {
 
         // Fallback: If we have subject.url (API URL), try to convert to HTML URL generally
         if let apiURLString = notification.subject.url {
-             return URL(string: apiURLString
-                 .replacingOccurrences(of: "api.github.com/repos", with: "github.com")
-                 .replacingOccurrences(of: "/pulls/", with: "/pull/") // API uses pulls, HTML uses pull
-             )
+            return URL(string: apiURLString
+                .replacingOccurrences(of: "api.github.com/repos", with: "github.com")
+                .replacingOccurrences(of: "/pulls/", with: "/pull/") // API uses pulls, HTML uses pull
+            )
         }
 
         return URL(string: notification.repository.htmlUrl)

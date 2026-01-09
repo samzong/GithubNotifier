@@ -41,6 +41,10 @@
 
 /* Account Tab */
 "settings.token.title" = "Personal Token:";
+"account.token.clear" = "Clear Token";
+"account.token.clear.title" = "Clear Token?";
+"account.token.clear.message" = "This will remove your GitHub token and sign you out.";
+"account.token.clear.confirm" = "Clear";
 
 "settings.token.generate.link" = "How to generate a token?";
 
@@ -147,6 +151,45 @@
 "rules.editor.logic" = "Logic";
 "rules.editor.actions" = "Actions";
 "rules.editor.value" = "Value";
+
+/* Welcome View */
+"welcome.title" = "Welcome to GitHubNotifier";
+"welcome.subtitle" = "Monitor GitHub notifications from your menu bar";
+"welcome.setup.hint" = "Configure your GitHub token to get started";
+"welcome.open.settings" = "Open Settings";
+
+/* Account Tab - Status */
+"account.status.header" = "Connection Status";
+"account.status.connected" = "Connected as";
+"account.status.not_configured" = "Token not configured";
+"account.status.verifying" = "Verifying...";
+
+/* Account Tab - Auth Method */
+"account.auth.header" = "Authentication Method";
+
+/* Account Tab - Permissions */
+"account.permissions.header" = "Required Permissions";
+"account.permissions.footer" = "Full functionality requires repo scope for private repositories";
+"account.permissions.classic.title" = "Classic Token (Recommended)";
+"account.permissions.finegrained.title" = "Fine-grained Token";
+"account.perm.notifications" = "Read your notifications";
+"account.perm.read_user" = "Read your profile information";
+"account.perm.repo" = "Access private repository details";
+"account.perm.fg.notifications" = "Read notifications";
+"account.perm.fg.email" = "Read email addresses";
+"account.perm.fg.repo" = "Read repository contents (for private repos)";
+"account.perm.required" = "Required";
+"account.perm.recommended" = "Recommended";
+"account.perm.optional" = "Optional";
+
+/* Account Tab - Generate */
+"account.generate.header" = "Generate Token";
+"account.generate.classic" = "Generate Token";
+"account.generate.finegrained" = "Generate Token";
+
+/* Account Tab - Web Auth */
+"account.webauth.coming_soon" = "Coming Soon";
+"account.webauth.description" = "Sign in with your GitHub account directly, no token required";
 
 /* Common */
 "common.cancel" = "Cancel";

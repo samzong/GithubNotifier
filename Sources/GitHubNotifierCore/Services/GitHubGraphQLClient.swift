@@ -179,9 +179,15 @@ public actor GitHubGraphQLClient {
         let result: NotificationDetailsData = try await execute(query: query, variables: variables)
 
         if type == .pullRequest {
-            return result.repository.pullRequest!.toDetails()
+            guard let pr = result.repository.pullRequest else {
+                throw GraphQLError.notFound("Pull request not found or inaccessible")
+            }
+            return pr.toDetails()
         } else {
-            return result.repository.issue!.toDetails()
+            guard let issue = result.repository.issue else {
+                throw GraphQLError.notFound("Issue not found or inaccessible")
+            }
+            return issue.toDetails()
         }
     }
 
@@ -744,6 +750,7 @@ public enum GraphQLError: Error, LocalizedError {
     case httpError(statusCode: Int)
     case graphQLErrors([String])
     case noData
+    case notFound(String)
 
     public var errorDescription: String? {
         switch self {
@@ -757,6 +764,8 @@ public enum GraphQLError: Error, LocalizedError {
             "GraphQL errors: \(errors.joined(separator: ", "))"
         case .noData:
             "No data returned from GraphQL"
+        case let .notFound(message):
+            message
         }
     }
 }

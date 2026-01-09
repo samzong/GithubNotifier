@@ -49,6 +49,7 @@ public class NotificationService {
     public func configure(token: String) {
         self.restClient = GitHubAPI(token: token)
         self.graphqlClient = GitHubGraphQLClient(token: token)
+        startAutoRefreshIfNeeded()
     }
 
     public func clearToken() {
@@ -62,6 +63,7 @@ public class NotificationService {
         prStateCache = [:]
         issueStateCache = [:]
         detailsCache = [:]
+        previousNotificationIds = []
     }
 
     public func fetchNotifications(isAutoRefresh: Bool = false) async {
@@ -74,10 +76,12 @@ public class NotificationService {
         errorMessage = nil
 
         do {
-            let fetchedNotifications = try await restClient.fetchNotifications()
+            var fetchedNotifications = try await restClient.fetchNotifications()
 
             if isAutoRefresh {
-                await detectAndNotifyNewNotifications(fetchedNotifications)
+                let markedAsReadIds = await detectAndNotifyNewNotifications(fetchedNotifications)
+                // Filter out notifications that were auto-marked as read by rules
+                fetchedNotifications = fetchedNotifications.filter { !markedAsReadIds.contains($0.id) }
             }
 
             notifications = fetchedNotifications
@@ -260,12 +264,14 @@ public class NotificationService {
         autoRefreshTask = nil
     }
 
-    private func detectAndNotifyNewNotifications(_ fetchedNotifications: [GitHubNotification]) async {
+    /// Returns the set of notification IDs that were marked as read by rules
+    private func detectAndNotifyNewNotifications(_ fetchedNotifications: [GitHubNotification]) async -> Set<String> {
+        var markedAsReadIds: Set<String> = []
         let currentIds = Set(fetchedNotifications.map(\.id))
 
         if previousNotificationIds.isEmpty {
             previousNotificationIds = currentIds
-            return
+            return markedAsReadIds
         }
 
         let newIds = currentIds.subtracting(previousNotificationIds)
@@ -288,6 +294,7 @@ public class NotificationService {
                 // Mark as read if rule dictates
                 if result.shouldMarkAsRead {
                     await markAsRead(notification: notification)
+                    markedAsReadIds.insert(notification.id)
                 }
 
                 // Only send system notification if not suppressed
@@ -304,6 +311,7 @@ public class NotificationService {
         }
 
         previousNotificationIds = currentIds
+        return markedAsReadIds
     }
 
     private nonisolated func determinePRStateFromGraphQL(_ details: NotificationDetails) -> PRState {
@@ -347,9 +355,9 @@ public class NotificationService {
         // Remove cache entries that are no longer in active keys
         // Note: This is a simple strategy. For more robustness, we might want to keep them for a while.
         // But since we persist nothing and this is an in-memory session cache, syncing with 'notifications' list is acceptable.
-        
+
         let keysToRemove = Set(detailsCache.keys).subtracting(activeKeys)
-        
+
         for key in keysToRemove {
             detailsCache.removeValue(forKey: key)
             prStateCache.removeValue(forKey: key)
