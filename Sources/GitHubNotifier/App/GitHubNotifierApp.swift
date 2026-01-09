@@ -45,6 +45,12 @@ struct GitHubNotifierApp: App {
                 await NotificationManager.shared.requestAuthorization()
             }
         }
+
+        if token != nil {
+            Task { @MainActor in
+                await service.fetchCurrentUser()
+            }
+        }
     }
 
     var body: some Scene {

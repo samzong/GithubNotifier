@@ -6,6 +6,7 @@ import SwiftUI
 struct SettingsView: View {
     let updater: SPUUpdater
     @Environment(NotificationService.self) private var notificationService
+
     @AppStorage(UserPreferences.refreshIntervalKey) private var refreshInterval: Double = 60
     @AppStorage(UserPreferences.launchAtLoginKey) private var launchAtLogin = false
     @AppStorage("enableSystemNotifications") private var enableSystemNotifications = false
@@ -369,6 +370,7 @@ struct SettingsView: View {
         notificationService.configure(token: trimmedToken)
         Task {
             await notificationService.fetchNotifications()
+            await notificationService.fetchCurrentUser()
         }
     }
 

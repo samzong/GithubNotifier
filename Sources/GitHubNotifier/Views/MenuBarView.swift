@@ -6,6 +6,7 @@ import SwiftUI
 struct MenuBarView: View {
     @Environment(NotificationService.self) private var notificationService
     @Environment(MyItemsService.self) private var myItemsService
+
     @Environment(\.openSettings) private var openSettings
     @Environment(\.dismiss) private var dismiss
 
@@ -14,7 +15,6 @@ struct MenuBarView: View {
     @AppStorage("menubar.selectedMyItemsFilter") private var selectedMyItemsFilterRawValue = MyItemsFilter.all.rawValue
 
     @State private var isMarkingAsRead = false
-    @State private var avatarImage: NSImage?
 
     private var selectedMainTab: MainTab {
         get { MainTab(rawValue: selectedMainTabRawValue) ?? .notifications }
@@ -56,17 +56,14 @@ struct MenuBarView: View {
         .onChange(of: selectedMainTab) { _, newValue in
              Task { await refreshCurrentTab() }
         }
-        .task(id: notificationService.currentUser?.avatarUrl) {
-            await loadAvatarImage(from: notificationService.currentUser?.avatarUrl)
-        }
     }
 
     // MARK: - Header
     
     private var headerView: some View {
-        HStack(spacing: 0) {
-            // Main Tabs
-            HStack(spacing: 8) {
+        HStack {
+            // Left: Main Tabs (gap-1 = 4pt)
+            HStack(spacing: 4) {
                 mainTabButton(
                     title: "menubar.tab.my_items".localized,
                     icon: "list.bullet.rectangle",
@@ -83,16 +80,14 @@ struct MenuBarView: View {
             
             Spacer()
             
-            // Right Actions
-            HStack(spacing: 16) {
-                // Refresh Button
+            // Right: Profile/Settings (gap-2 = 8pt)
+            HStack(spacing: 8) {
+                // Refresh Button (p-1.5 = 6pt, icon w-3.5 = 14pt)
                 Button(action: {
-                    Task {
-                        await refreshCurrentTab()
-                    }
+                    Task { await refreshCurrentTab() }
                 }) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(notificationService.isLoading || myItemsService.isLoading ? 360 : 0))
                         .animation(
@@ -102,12 +97,13 @@ struct MenuBarView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .frame(width: 24, height: 24)
                 .help("menubar.refresh".localized)
                 
-                Divider()
-                    .frame(height: 16)
+                // Divider (w-px h-4)
+                Divider().frame(height: 16)
                 
-                // Avatar Menu
+                // Settings Menu (gear icon)
                 Menu {
                     if let login = notificationService.currentUser?.login {
                         Text("Signed in as \(login)")
@@ -131,54 +127,54 @@ struct MenuBarView: View {
                         NSApplication.shared.terminate(nil)
                     }
                 } label: {
-                    if let avatarImage {
-                        Image(nsImage: avatarImage)
-                            .resizable()
-                            .renderingMode(.original)
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 20, height: 20)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.secondary.opacity(0.2), lineWidth: 1))
-                    } else {
-                        Image(systemName: "person.circle.fill")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .foregroundStyle(.secondary)
-                    }
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
                 .frame(width: 24, height: 24)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .frame(height: 48) // h-12 = 48pt
+        .padding(.horizontal, 12) // px-3 = 12pt
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
     }
     
+    // nav-tab button matching demo.html exactly
     private func mainTabButton(title: String, icon: String, tab: MainTab, showDot: Bool = false) -> some View {
         let isSelected = selectedMainTab == tab
         
         return Button(action: { selectedMainTab = tab }) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) { // gap-2 = 8pt
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(.system(size: 14)) // w-4 h-4 = 16pt, but SF Symbols look better at 14
                 
                 Text(title)
-                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
-                
-                if showDot {
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 6, height: 6)
-                        .offset(y: -4)
-                }
+                    .font(.system(size: 12, weight: .medium)) // text-xs font-medium
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
-            .foregroundStyle(isSelected ? Color.accentColor : .primary)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .fixedSize()
+            .padding(.horizontal, 12) // px-3
+            .padding(.vertical, 6) // py-1.5
+            .background(
+                isSelected 
+                    ? Color.accentColor.opacity(0.1) // rgba(0,122,255,0.1)
+                    : Color.clear
+            )
+            .foregroundStyle(isSelected ? Color.accentColor : .secondary) // #007aff vs #636366
+            .clipShape(RoundedRectangle(cornerRadius: 6)) // rounded-md
+            .overlay(
+                Group {
+                    if showDot {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 6, height: 6)
+                            .offset(x: 4, y: -8)
+                    }
+                },
+                alignment: .topTrailing
+            )
         }
         .buttonStyle(.plain)
     }
@@ -759,21 +755,6 @@ struct MenuBarView: View {
     private func clearInitialFocus() {
         Task { @MainActor in
             NSApplication.shared.keyWindow?.makeFirstResponder(nil)
-        }
-    }
-
-    @MainActor
-    private func loadAvatarImage(from urlString: String?) async {
-        guard let urlString, let url = URL(string: urlString) else {
-            avatarImage = nil
-            return
-        }
-
-        do {
-            let result = try await KingfisherManager.shared.retrieveImage(with: url)
-            avatarImage = result.image
-        } catch {
-            avatarImage = nil
         }
     }
 
