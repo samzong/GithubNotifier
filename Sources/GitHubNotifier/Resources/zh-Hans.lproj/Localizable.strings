@@ -130,3 +130,24 @@
 "notification.test.title" = "🎉 测试通知";
 "notification.test.subtitle" = "GitHubNotifier 工作正常！";
 "notification.test.body" = "点击可打开 GitHub 通知页面";
+
+/* Rules Tab */
+"rules.title" = "通知规则";
+"rules.add" = "添加规则";
+"rules.empty.title" = "暂无规则";
+"rules.empty.subtitle" = "创建规则来自动过滤和管理通知";
+
+/* Rule Editor */
+"rules.editor.new" = "新建规则";
+"rules.editor.edit" = "编辑规则";
+"rules.editor.name" = "规则名称";
+"rules.editor.enabled" = "启用";
+"rules.editor.conditions" = "条件";
+"rules.editor.add_condition" = "添加条件";
+"rules.editor.logic" = "逻辑";
+"rules.editor.actions" = "动作";
+"rules.editor.value" = "值";
+
+/* Common */
+"common.cancel" = "取消";
+"common.save" = "保存";

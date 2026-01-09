@@ -3,11 +3,11 @@ import SwiftUI
 
 struct AccountTab: View {
     @Environment(NotificationService.self) private var notificationService
-    
+
     @State private var token = ""
     @State private var hasLoadedToken = false
     @FocusState private var isTokenFocused: Bool
-    
+
     let settingsWidth: CGFloat
 
     var body: some View {

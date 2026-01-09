@@ -11,6 +11,7 @@ struct SubTabPickerView: View {
     let isMarkingAsRead: Bool
 
     let onMarkAsRead: () async -> Void
+    let onOpenRules: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
@@ -20,6 +21,7 @@ struct SubTabPickerView: View {
 
             if mainTab == .notifications {
                 markAsReadButton
+                rulesButton
             }
         }
         .padding(.horizontal, 16)
@@ -84,5 +86,17 @@ struct SubTabPickerView: View {
         .buttonStyle(.plain)
         .help("menubar.mark_all_read".localized)
         .disabled(isMarkingAsRead)
+    }
+
+    private var rulesButton: some View {
+        Button {
+            onOpenRules()
+        } label: {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.purple)
+        }
+        .buttonStyle(.plain)
+        .help("settings.tab.rules".localized)
     }
 }

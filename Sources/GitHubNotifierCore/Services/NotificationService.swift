@@ -20,6 +20,10 @@ public class NotificationService {
     private var detailsCache: [String: NotificationDetails] = [:]
     private var previousNotificationIds: Set<String> = []
 
+    // Rule engine integration
+    public var ruleStorage: RuleStorage?
+    private let ruleEngine = RuleEngine()
+
     public init(token: String? = nil) {
         if let token {
             self.restClient = GitHubAPI(token: token)
@@ -265,9 +269,33 @@ public class NotificationService {
 
         let newIds = currentIds.subtracting(previousNotificationIds)
 
-        let newNotifications = fetchedNotifications.filter { notification in
+        var newNotifications = fetchedNotifications.filter { notification in
             newIds.contains(notification.id) &&
                 (notification.notificationType == .issue || notification.notificationType == .pullRequest)
+        }
+
+        // Apply rules to new notifications
+        if let ruleStorage {
+            var notificationsToSend: [GitHubNotification] = []
+
+            for notification in newNotifications {
+                let result = ruleEngine.evaluate(
+                    notification: notification,
+                    rules: ruleStorage.rules
+                )
+
+                // Mark as read if rule dictates
+                if result.shouldMarkAsRead {
+                    await markAsRead(notification: notification)
+                }
+
+                // Only send system notification if not suppressed
+                if !result.shouldSuppressNotification, !result.shouldMarkAsRead {
+                    notificationsToSend.append(notification)
+                }
+            }
+
+            newNotifications = notificationsToSend
         }
 
         if !newNotifications.isEmpty {

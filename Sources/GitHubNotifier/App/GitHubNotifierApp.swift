@@ -14,6 +14,7 @@ import SwiftUI
 struct GitHubNotifierApp: App {
     @State private var notificationService: NotificationService
     @State private var activityService: ActivityService
+    @State private var ruleStorage = RuleStorage()
 
     /// Sparkle updater controller for automatic updates
     private let updaterController: SPUStandardUpdaterController
@@ -36,8 +37,13 @@ struct GitHubNotifierApp: App {
         }
         _activityService = State(initialValue: itemsService)
 
+        // Create rule storage and inject into notification service
+        let storage = RuleStorage()
+        _ruleStorage = State(initialValue: storage)
+
         Task { @MainActor in
             NotificationManager.shared.notificationService = service
+            service.ruleStorage = storage
         }
 
         if UserDefaults.standard.bool(forKey: "enableSystemNotifications") {
