@@ -6,6 +6,10 @@
 "settings.tab.account" = "Account";
 "settings.user" = "User";
 "settings.tab.about" = "About";
+"settings.tab.rules" = "Rules";
+"settings.tab.ai" = "AI";
+"settings.coming_soon.title" = "Coming Soon";
+"settings.coming_soon.subtitle" = "This feature is under development";
 
 /* About Tab */
 "about.github.repo" = "GitHub Repository";

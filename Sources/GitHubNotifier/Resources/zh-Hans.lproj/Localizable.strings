@@ -6,6 +6,10 @@
 "settings.tab.account" = "账户";
 "settings.user" = "用户";
 "settings.tab.about" = "关于";
+"settings.tab.rules" = "规则";
+"settings.tab.ai" = "AI";
+"settings.coming_soon.title" = "即将推出";
+"settings.coming_soon.subtitle" = "此功能正在开发中";
 
 /* About Tab */
 "about.github.repo" = "GitHub 仓库";

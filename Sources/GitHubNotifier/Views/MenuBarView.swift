@@ -293,12 +293,17 @@ struct MenuBarView: View {
         openSettings()
 
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(100))
+            // Activate app first
+            NSApplication.shared.activate(ignoringOtherApps: true)
+            
+            // Wait for window to appear
+            try? await Task.sleep(for: .milliseconds(200))
+            
             if let settingsWindow = NSApplication.shared.windows.first(where: {
                 $0.title.contains("Settings") || $0.title.contains("设置")
             }) {
                 settingsWindow.makeKeyAndOrderFront(nil)
-                NSApplication.shared.activate(ignoringOtherApps: true)
+                settingsWindow.orderFrontRegardless()
             }
         }
     }
