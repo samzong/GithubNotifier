@@ -29,12 +29,12 @@ public actor GitHubGraphQLClient {
     }
 
     // MARK: - User Info
-    
+
     public struct ViewerInfo: Decodable, Sendable {
         public let login: String
         public let avatarUrl: String
     }
-    
+
     public func fetchViewer() async throws -> ViewerInfo {
         let query = """
         query {
@@ -44,11 +44,11 @@ public actor GitHubGraphQLClient {
           }
         }
         """
-        
+
         let result: ViewerData = try await execute(query: query)
         return result.viewer
     }
-    
+
     private struct ViewerData: Decodable {
         let viewer: ViewerInfo
     }
@@ -89,8 +89,6 @@ public actor GitHubGraphQLClient {
 
         return data
     }
-
-
 
     // MARK: - Notification Details
 

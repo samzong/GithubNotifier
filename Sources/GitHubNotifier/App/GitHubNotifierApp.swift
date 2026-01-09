@@ -13,7 +13,7 @@ import SwiftUI
 @main
 struct GitHubNotifierApp: App {
     @State private var notificationService: NotificationService
-    @State private var myItemsService: MyItemsService
+    @State private var activityService: MyItemsService
 
     /// Sparkle updater controller for automatic updates
     private let updaterController: SPUStandardUpdaterController
@@ -34,7 +34,7 @@ struct GitHubNotifierApp: App {
         if let token {
             itemsService.configure(token: token)
         }
-        _myItemsService = State(initialValue: itemsService)
+        _activityService = State(initialValue: itemsService)
 
         Task { @MainActor in
             NotificationManager.shared.notificationService = service
@@ -57,7 +57,7 @@ struct GitHubNotifierApp: App {
         MenuBarExtra {
             MenuBarView()
                 .environment(notificationService)
-                .environment(myItemsService)
+                .environment(activityService)
         } label: {
             MenuBarLabel(unreadCount: notificationService.unreadCount)
         }
@@ -66,7 +66,7 @@ struct GitHubNotifierApp: App {
         Settings {
             SettingsView(updater: updaterController.updater)
                 .environment(notificationService)
-                .environment(myItemsService)
+                .environment(activityService)
         }
     }
 }

@@ -56,8 +56,9 @@
 "menubar.tab.issues" = "Issues";
 "menubar.tab.prs" = "PRs";
 "menubar.tab.notifications" = "Notifications";
-"menubar.tab.my_items" = "My Items";
-"menubar.my_items.empty" = "No items found";
+"menubar.tab.activity" = "Activity";
+"menubar.no_items" = "No items found";
+"menubar.no_notifications" = "No notifications";
 "menubar.filter.all" = "All";
 "menubar.filter.created" = "Created";
 "menubar.filter.assigned" = "Assigned";

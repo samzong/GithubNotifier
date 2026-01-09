@@ -56,8 +56,9 @@
 "menubar.tab.issues" = "Issues";
 "menubar.tab.prs" = "PRs";
 "menubar.tab.notifications" = "通知";
-"menubar.tab.my_items" = "我的";
-"menubar.my_items.empty" = "暂无相关条目";
+"menubar.tab.activity" = "动态";
+"menubar.no_items" = "暂无相关条目";
+"menubar.no_notifications" = "暂无通知";
 "menubar.filter.all" = "全部";
 "menubar.filter.created" = "创建";
 "menubar.filter.assigned" = "指派";

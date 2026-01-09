@@ -3,10 +3,10 @@ import Foundation
 /// Filter category matching GitHub's tabs
 public enum MyItemsFilter: String, CaseIterable, Sendable {
     case all
-    case created      // author:@me
-    case assigned     // assignee:@me
-    case mentioned    // mentions:@me
-    case reviewRequested  // review-requested:@me (PRs only)
+    case created // author:@me
+    case assigned // assignee:@me
+    case mentioned // mentions:@me
+    case reviewRequested // review-requested:@me (PRs only)
 }
 
 /// Service for fetching user-related Issues and Pull Requests
