@@ -73,6 +73,7 @@ struct GitHubNotifierApp: App {
             SettingsView(updater: updaterController.updater)
                 .environment(notificationService)
                 .environment(activityService)
+                .environment(ruleStorage)
         }
     }
 }

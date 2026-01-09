@@ -4,7 +4,7 @@ import SwiftUI
 struct RulesTab: View {
     let settingsWidth: CGFloat
 
-    @State private var ruleStorage = RuleStorage()
+    @Environment(RuleStorage.self) private var ruleStorage
     @State private var showingEditor = false
     @State private var editingRule: NotificationRule?
 
