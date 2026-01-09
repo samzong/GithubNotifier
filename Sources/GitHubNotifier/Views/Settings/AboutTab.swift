@@ -4,12 +4,12 @@ import SwiftUI
 struct AboutTab: View {
     let updater: SPUUpdater
     let settingsWidth: CGFloat
-    
+
     @State private var latestVersion: String?
     @State private var latestReleaseURL: String?
     @State private var isCheckingUpdate = false
     @State private var updateCheckResult: UpdateCheckResult = .none
-    
+
     private let repoOwner = "samzong"
     private let repoName = "GitHubNotifier"
 

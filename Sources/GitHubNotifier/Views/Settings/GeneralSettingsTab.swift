@@ -4,15 +4,15 @@ import SwiftUI
 
 struct GeneralSettingsTab: View {
     @Environment(NotificationService.self) private var notificationService
-    
+
     @AppStorage(UserPreferences.refreshIntervalKey) private var refreshInterval: Double = 60
     @AppStorage(UserPreferences.launchAtLoginKey) private var launchAtLogin = false
     @AppStorage("enableSystemNotifications") private var enableSystemNotifications = false
-    
+
     @State private var isTestingNotification = false
-    
+
     let settingsWidth: CGFloat
-    
+
     private let refreshOptions: [(seconds: Double, label: String)] = [
         (60, "settings.refresh.1min".localized),
         (120, "settings.refresh.2min".localized),

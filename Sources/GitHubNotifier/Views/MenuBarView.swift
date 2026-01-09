@@ -40,7 +40,7 @@ struct MenuBarView: View {
                 isLoading: notificationService.isLoading || activityService.isLoading,
                 currentUserLogin: notificationService.currentUser?.login,
                 onRefresh: refreshCurrentTab,
-                onOpenSettings: openSettingsAndBringToFront,
+                onOpenSettings: { openSettingsAndBringToFront() },
                 onQuit: { NSApplication.shared.terminate(nil) }
             )
 
@@ -56,7 +56,8 @@ struct MenuBarView: View {
                 issuesCount: currentIssuesCount,
                 prsCount: currentPrsCount,
                 isMarkingAsRead: isMarkingAsRead,
-                onMarkAsRead: markFilteredAsRead
+                onMarkAsRead: markFilteredAsRead,
+                onOpenRules: { openSettingsAndBringToFront(tab: .rules) }
             )
 
             if selectedMainTab == .activity {
@@ -75,14 +76,14 @@ struct MenuBarView: View {
             contentView
                 .frame(maxHeight: .infinity, alignment: .top)
         }
-        .frame(width: 320, height: 520)
+        .frame(width: 360, height: 520)
         .background(Color(nsColor: .windowBackgroundColor))
         .task {
             clearInitialFocus()
             await initialLoad()
         }
         .onChange(of: selectedMainTab) { _, newTab in
-            if newTab == .activity && selectedSubTab == .all {
+            if newTab == .activity, selectedSubTab == .all {
                 selectedSubTab = .issues
             }
             Task { await refreshCurrentTab() }
@@ -288,17 +289,22 @@ struct MenuBarView: View {
         }
     }
 
-    private func openSettingsAndBringToFront() {
+    @AppStorage("settings.selectedTab") private var settingsSelectedTab: SettingsTab = .general
+
+    private func openSettingsAndBringToFront(tab: SettingsTab? = nil) {
+        if let tab {
+            settingsSelectedTab = tab
+        }
         closeMenuBarWindow()
         openSettings()
 
         Task { @MainActor in
             // Activate app first
             NSApplication.shared.activate(ignoringOtherApps: true)
-            
+
             // Wait for window to appear
             try? await Task.sleep(for: .milliseconds(200))
-            
+
             if let settingsWindow = NSApplication.shared.windows.first(where: {
                 $0.title.contains("Settings") || $0.title.contains("设置")
             }) {

@@ -130,3 +130,24 @@
 "notification.test.title" = "🎉 Test Notification";
 "notification.test.subtitle" = "GitHubNotifier is working!";
 "notification.test.body" = "Click to open GitHub notifications";
+
+/* Rules Tab */
+"rules.title" = "Notification Rules";
+"rules.add" = "Add Rule";
+"rules.empty.title" = "No Rules Yet";
+"rules.empty.subtitle" = "Create rules to automatically filter and manage your notifications";
+
+/* Rule Editor */
+"rules.editor.new" = "New Rule";
+"rules.editor.edit" = "Edit Rule";
+"rules.editor.name" = "Rule Name";
+"rules.editor.enabled" = "Enabled";
+"rules.editor.conditions" = "Conditions";
+"rules.editor.add_condition" = "Add Condition";
+"rules.editor.logic" = "Logic";
+"rules.editor.actions" = "Actions";
+"rules.editor.value" = "Value";
+
+/* Common */
+"common.cancel" = "Cancel";
+"common.save" = "Save";
