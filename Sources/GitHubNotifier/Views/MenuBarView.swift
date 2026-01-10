@@ -172,16 +172,6 @@ struct MenuBarView: View {
         }
     }
 
-    private var legacyFilter: MyItemsFilter {
-        switch selectedActivityFilter {
-        case .all: .all
-        case .assigned: .assigned
-        case .created: .created
-        case .mentioned: .mentioned
-        case .reviewRequested: .reviewRequested
-        }
-    }
-
     @MainActor
     private func initialLoad() async {
         await notificationService.fetchCurrentUser()

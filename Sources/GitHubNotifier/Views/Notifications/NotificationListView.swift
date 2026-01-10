@@ -1,4 +1,3 @@
-import AppKit
 import GitHubNotifierCore
 import SwiftUI
 
