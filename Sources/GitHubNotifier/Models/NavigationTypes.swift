@@ -11,10 +11,4 @@ public enum MenuBarSubTab: String, CaseIterable, Sendable {
     case prs
 }
 
-public enum ActivityFilter: String, CaseIterable, Sendable {
-    case all
-    case assigned
-    case created
-    case mentioned
-    case reviewRequested
-}
+

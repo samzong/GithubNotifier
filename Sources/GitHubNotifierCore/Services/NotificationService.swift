@@ -13,8 +13,8 @@ public class NotificationService {
     private var restClient: GitHubAPI?
     private var graphqlClient: GitHubGraphQLClient?
     // nonisolated(unsafe) required for mutable properties accessed from deinit
-    private nonisolated(unsafe) var autoRefreshTask: Task<Void, Never>?
-    private nonisolated(unsafe) var initialFetchTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var autoRefreshTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var initialFetchTask: Task<Void, Never>?
     private var prStateCache: [String: PRState] = [:]
     private var issueStateCache: [String: IssueState] = [:]
     private var detailsCache: [String: NotificationDetails] = [:]

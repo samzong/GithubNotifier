@@ -14,7 +14,7 @@ struct ActivityListView: View {
                 loadingView
             } else if let error = service.errorMessage {
                 errorView(error)
-            } else if filteredItems.isEmpty {
+            } else if displayedItems.isEmpty {
                 emptyView
             } else {
                 listView
@@ -25,12 +25,12 @@ struct ActivityListView: View {
     private var listView: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(filteredItems) { item in
+                ForEach(displayedItems) { item in
                     ActivityRowView(item: item) {
                         onItemTap(item)
                     }
 
-                    if item.id != filteredItems.last?.id {
+                    if item.id != displayedItems.last?.id {
                         Divider()
                             .padding(.leading, 44)
                     }
@@ -78,19 +78,18 @@ struct ActivityListView: View {
         .padding()
     }
 
-    private var filteredItems: [SearchResultItem] {
-        let baseItems = legacyFilteredItems
+    private var displayedItems: [SearchResultItem] {
         switch subTab {
         case .all:
-            return Array(baseItems.prefix(20))
+            return Array(filteredItems.prefix(20))
         case .issues:
-            return Array(baseItems.filter { $0.itemType == .issue }.prefix(20))
+            return Array(filteredItems.filter { $0.itemType == .issue }.prefix(20))
         case .prs:
-            return Array(baseItems.filter { $0.itemType == .pullRequest }.prefix(20))
+            return Array(filteredItems.filter { $0.itemType == .pullRequest }.prefix(20))
         }
     }
 
-    private var legacyFilteredItems: [SearchResultItem] {
+    private var filteredItems: [SearchResultItem] {
         switch filter {
         case .all:
             service.items

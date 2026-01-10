@@ -1,7 +1,7 @@
 import Foundation
 
 /// Filter category matching GitHub's tabs
-public enum MyItemsFilter: String, CaseIterable, Sendable {
+public enum ActivityFilter: String, CaseIterable, Sendable {
     case all
     case created // author:@me
     case assigned // assignee:@me
@@ -122,7 +122,7 @@ public class ActivityService {
 
     // MARK: - Filtered Accessors
 
-    public func items(for filter: MyItemsFilter) -> [SearchResultItem] {
+    public func items(for filter: ActivityFilter) -> [SearchResultItem] {
         switch filter {
         case .all: items
         case .created: createdItems
@@ -132,15 +132,15 @@ public class ActivityService {
         }
     }
 
-    public func pullRequests(for filter: MyItemsFilter) -> [SearchResultItem] {
+    public func pullRequests(for filter: ActivityFilter) -> [SearchResultItem] {
         items(for: filter).filter { $0.itemType == .pullRequest }
     }
 
-    public func issues(for filter: MyItemsFilter) -> [SearchResultItem] {
+    public func issues(for filter: ActivityFilter) -> [SearchResultItem] {
         items(for: filter).filter { $0.itemType == .issue }
     }
 
-    public func count(for filter: MyItemsFilter) -> Int {
+    public func count(for filter: ActivityFilter) -> Int {
         items(for: filter).count
     }
 
