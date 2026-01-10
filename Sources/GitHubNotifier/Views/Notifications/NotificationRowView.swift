@@ -5,6 +5,7 @@ struct NotificationRowView: View {
     let group: NotificationGroup
     let prState: PRState?
     let issueState: IssueState?
+    let ciStatus: CIStatus?
     let onTap: () -> Void
 
     private var notification: GitHubNotification {
@@ -43,6 +44,10 @@ struct NotificationRowView: View {
                         TimeAgoText(date: notification.updatedAt)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+
+                        if let ciStatus {
+                            CIStatusBadge(status: ciStatus)
+                        }
                     }
 
                     Text(notification.subject.title)

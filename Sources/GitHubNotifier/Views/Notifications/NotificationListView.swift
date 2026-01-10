@@ -28,7 +28,8 @@ struct NotificationListView: View {
                     NotificationRowView(
                         group: group,
                         prState: service.getPRState(for: group.latestNotification),
-                        issueState: service.getIssueState(for: group.latestNotification)
+                        issueState: service.getIssueState(for: group.latestNotification),
+                        ciStatus: service.getNotificationDetails(for: group.latestNotification)?.ciStatus
                     ) {
                         onGroupTap(group)
                     }
