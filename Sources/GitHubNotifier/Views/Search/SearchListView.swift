@@ -25,8 +25,7 @@ struct SearchListView: View {
 
     // MARK: - Content
 
-    @ViewBuilder
-    private var content: some View {
+    @ViewBuilder private var content: some View {
         Group {
             if searchService.savedSearches.isEmpty {
                 emptyStateNoSearches
@@ -48,21 +47,20 @@ struct SearchListView: View {
     private var displayedItems: [SearchResultItem] {
         if let selectedSearchId {
             // Filter by specific search
-            return searchService.resultsBySearchId[selectedSearchId] ?? []
+            searchService.resultsBySearchId[selectedSearchId] ?? []
         } else {
             // Show all aggregated items
-            return searchService.items
+            searchService.items
         }
     }
 
     // MARK: - Results List
 
-    @ViewBuilder
-    private var resultsList: some View {
+    @ViewBuilder private var resultsList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(displayedItems) { item in
-                    SearchResultRow(item: item)
+                    SearchRowView(item: item)
                         .contentShape(Rectangle())
                         .onTapGesture { onItemTapped(item) }
 
@@ -77,8 +75,7 @@ struct SearchListView: View {
 
     // MARK: - Empty States
 
-    @ViewBuilder
-    private var emptyStateNoSearches: some View {
+    @ViewBuilder private var emptyStateNoSearches: some View {
         ContentUnavailableView {
             Label("No Saved Searches", systemImage: "magnifyingglass")
         } description: {
@@ -92,8 +89,7 @@ struct SearchListView: View {
         }
     }
 
-    @ViewBuilder
-    private var emptyStateNoResults: some View {
+    @ViewBuilder private var emptyStateNoResults: some View {
         ContentUnavailableView(
             "No Results",
             systemImage: "tray",
@@ -101,82 +97,11 @@ struct SearchListView: View {
         )
     }
 
-    @ViewBuilder
-    private var loadingView: some View {
+    @ViewBuilder private var loadingView: some View {
         VStack {
             Spacer()
             ProgressView("Loading searches...")
             Spacer()
-        }
-    }
-}
-
-// MARK: - Result Row
-
-private struct SearchResultRow: View {
-    let item: SearchResultItem
-
-    @State private var isHovered = false
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Type icon
-            Image(systemName: item.itemType == .pullRequest ? "arrow.triangle.pull" : "circle.dotted")
-                .font(.system(size: 14))
-                .foregroundStyle(item.itemType == .pullRequest ? .purple : .green)
-                .frame(width: 20)
-
-            // Content
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
-                    .font(.callout)
-                    .lineLimit(2)
-                    .foregroundStyle(.primary)
-
-                HStack(spacing: 6) {
-                    Text("\(item.repositoryOwner)/\(item.repositoryName)")
-                        .foregroundStyle(.secondary)
-
-                    Text("#\(item.number)")
-                        .foregroundStyle(.tertiary)
-
-                    if let ciStatus = item.ciStatus {
-                        CIStatusBadge(status: ciStatus)
-                    }
-                }
-                .font(.caption)
-            }
-
-            Spacer()
-
-            // State badge
-            Text(item.state)
-                .font(.caption2)
-                .fontWeight(.medium)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(stateColor.opacity(0.15))
-                .foregroundStyle(stateColor)
-                .clipShape(Capsule())
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(isHovered ? Color(nsColor: .selectedContentBackgroundColor).opacity(0.3) : Color.clear)
-        .onHover { hovering in
-            isHovered = hovering
-        }
-    }
-
-    private var stateColor: Color {
-        switch item.state.uppercased() {
-        case "OPEN":
-            return .green
-        case "MERGED":
-            return .purple
-        case "CLOSED":
-            return .red
-        default:
-            return .secondary
         }
     }
 }

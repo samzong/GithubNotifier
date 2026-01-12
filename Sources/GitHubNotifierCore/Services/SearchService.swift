@@ -51,13 +51,36 @@ public class SearchService {
         saveToStorage()
     }
 
-    public func updateSearch(id: UUID, name: String?, query: String?, isEnabled: Bool?, isPinned: Bool?, type: SearchType?) {
+    /// Options for updating a saved search
+    public struct UpdateOptions: Sendable {
+        public var name: String?
+        public var query: String?
+        public var isEnabled: Bool?
+        public var isPinned: Bool?
+        public var type: SearchType?
+
+        public init(
+            name: String? = nil,
+            query: String? = nil,
+            isEnabled: Bool? = nil,
+            isPinned: Bool? = nil,
+            type: SearchType? = nil
+        ) {
+            self.name = name
+            self.query = query
+            self.isEnabled = isEnabled
+            self.isPinned = isPinned
+            self.type = type
+        }
+    }
+
+    public func updateSearch(id: UUID, options: UpdateOptions) {
         guard let index = savedSearches.firstIndex(where: { $0.id == id }) else { return }
-        if let name { savedSearches[index].name = name }
-        if let query { savedSearches[index].query = query }
-        if let isEnabled { savedSearches[index].isEnabled = isEnabled }
-        if let isPinned { savedSearches[index].isPinned = isPinned }
-        if let type { savedSearches[index].type = type }
+        if let name = options.name { savedSearches[index].name = name }
+        if let query = options.query { savedSearches[index].query = query }
+        if let isEnabled = options.isEnabled { savedSearches[index].isEnabled = isEnabled }
+        if let isPinned = options.isPinned { savedSearches[index].isPinned = isPinned }
+        if let type = options.type { savedSearches[index].type = type }
         saveToStorage()
     }
 

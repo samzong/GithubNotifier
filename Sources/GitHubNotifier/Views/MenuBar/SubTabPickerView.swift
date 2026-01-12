@@ -136,8 +136,7 @@ struct SubTabPickerView: View {
 
     // MARK: - Action Buttons
 
-    @ViewBuilder
-    private var actionButtons: some View {
+    @ViewBuilder private var actionButtons: some View {
         switch mainTab {
         case .notifications:
             // Notifications: Mark as Read, Rules, Refresh

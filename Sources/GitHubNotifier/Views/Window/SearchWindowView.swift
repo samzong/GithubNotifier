@@ -33,8 +33,7 @@ struct SearchWindowView: View {
 
     // MARK: - Sidebar
 
-    @ViewBuilder
-    private var sidebar: some View {
+    @ViewBuilder private var sidebar: some View {
         VStack(spacing: 0) {
             List(selection: $selectedSearchId) {
                 ForEach(searchService.savedSearches) { search in
@@ -76,8 +75,7 @@ struct SearchWindowView: View {
 
     // MARK: - Detail View
 
-    @ViewBuilder
-    private var detailView: some View {
+    @ViewBuilder private var detailView: some View {
         if selectedSearchId != nil || isNewSearch {
             VStack(spacing: 0) {
                 editorSection
@@ -95,8 +93,7 @@ struct SearchWindowView: View {
 
     // MARK: - Editor Section
 
-    @ViewBuilder
-    private var editorSection: some View {
+    @ViewBuilder private var editorSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(isNewSearch ? "New Search" : "Edit Search")
@@ -180,8 +177,7 @@ struct SearchWindowView: View {
 
     // MARK: - Preview Section
 
-    @ViewBuilder
-    private var previewSection: some View {
+    @ViewBuilder private var previewSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Preview Results")
@@ -247,11 +243,12 @@ struct SearchWindowView: View {
         } else if let id = selectedSearchId {
             searchService.updateSearch(
                 id: id,
-                name: editingName,
-                query: editingQuery,
-                isEnabled: nil,
-                isPinned: editingIsPinned,
-                type: editingType
+                options: .init(
+                    name: editingName,
+                    query: editingQuery,
+                    isPinned: editingIsPinned,
+                    type: editingType
+                )
             )
         }
     }
@@ -343,13 +340,13 @@ private struct SearchPreviewRow: View {
     private var stateColor: Color {
         switch item.state.uppercased() {
         case "OPEN":
-            return .green
+            .green
         case "MERGED":
-            return .purple
+            .purple
         case "CLOSED":
-            return .red
+            .red
         default:
-            return .secondary
+            .secondary
         }
     }
 }

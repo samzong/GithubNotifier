@@ -15,14 +15,14 @@ public enum WindowIdentifier: String, CaseIterable, Identifiable, Sendable {
     public var title: String {
         switch self {
         case .searchManagement:
-            return "Manage Saved Searches"
+            "Manage Saved Searches"
         }
     }
 
     public var defaultSize: (width: CGFloat, height: CGFloat) {
         switch self {
         case .searchManagement:
-            return (720, 520)
+            (720, 520)
         }
     }
 }

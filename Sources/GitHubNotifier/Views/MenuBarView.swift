@@ -77,8 +77,7 @@ struct MenuBarView: View {
                     onOpenRules: { openSettingsAndBringToFront(tab: .rules) },
                     onRefresh: refreshCurrentTab,
                     onManage: selectedMainTab == .search ? {
-                        WindowManager.shared.activeWindow = .searchManagement
-                        openWindow(id: "auxiliary")
+                        openAuxiliaryWindowAndBringToFront(window: .searchManagement)
                     } : nil
                 )
 
@@ -166,7 +165,7 @@ struct MenuBarView: View {
         case .activity:
             activityService.issues(for: .all).count
         case .search:
-            searchService.items.filter { $0.itemType == .issue }.count
+            searchService.items.count(where: { $0.itemType == .issue })
         }
     }
 
@@ -177,7 +176,7 @@ struct MenuBarView: View {
         case .activity:
             activityService.pullRequests(for: .all).count
         case .search:
-            searchService.items.filter { $0.itemType == .pullRequest }.count
+            searchService.items.count(where: { $0.itemType == .pullRequest })
         }
     }
 
@@ -325,6 +324,17 @@ struct MenuBarView: View {
 
         // Activate the app to bring Settings window to front
         // The Settings scene handles its own window management
+        Task { @MainActor in
+            NSApplication.shared.activate(ignoringOtherApps: true)
+        }
+    }
+
+    private func openAuxiliaryWindowAndBringToFront(window: WindowIdentifier) {
+        WindowManager.shared.activeWindow = window
+        closeMenuBarWindow()
+        openWindow(id: "auxiliary")
+
+        // Activate the app to bring auxiliary window to front
         Task { @MainActor in
             NSApplication.shared.activate(ignoringOtherApps: true)
         }

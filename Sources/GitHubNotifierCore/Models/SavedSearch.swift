@@ -16,19 +16,19 @@ public enum SearchType: String, Codable, CaseIterable, Sendable, Identifiable {
 
     public var icon: String {
         switch self {
-        case .all: return "magnifyingglass"
-        case .issue: return "dot.circle"
-        case .pr: return "arrow.triangle.pull"
-        case .discussion: return "bubble.left.and.bubble.right"
+        case .all: "magnifyingglass"
+        case .issue: "dot.circle"
+        case .pr: "arrow.triangle.pull"
+        case .discussion: "bubble.left.and.bubble.right"
         }
     }
 
     public var displayName: String {
         switch self {
-        case .all: return "All"
-        case .issue: return "Issues"
-        case .pr: return "Pull Requests"
-        case .discussion: return "Discussions"
+        case .all: "All"
+        case .issue: "Issues"
+        case .pr: "Pull Requests"
+        case .discussion: "Discussions"
         }
     }
 }

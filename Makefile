@@ -106,7 +106,7 @@ format-check: ## Check formatting (for CI)
 	swiftformat Sources --config .swiftformat --lint
 
 .PHONY: check
-check: format-check lint ## Run all checks
+check: lint-fix lint format format-check  ## Run all checks
 
 ##@ Release
 # ------------------------------------------------------------------------------

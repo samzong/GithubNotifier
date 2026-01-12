@@ -102,7 +102,7 @@ struct GitHubNotifierApp: App {
                 }
         }
         .defaultSize(width: 720, height: 520)
-        .handlesExternalEvents(matching: Set(arrayLiteral: "window"))
+        .handlesExternalEvents(matching: ["window"])
     }
 }
 
