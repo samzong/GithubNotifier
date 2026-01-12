@@ -66,6 +66,7 @@
 "menubar.tab.prs" = "PRs";
 "menubar.tab.notifications" = "通知";
 "menubar.tab.activity" = "动态";
+"menubar.tab.search" = "搜索";
 "menubar.no_items" = "暂无相关条目";
 "menubar.filter.all" = "全部";
 "menubar.filter.created" = "创建";

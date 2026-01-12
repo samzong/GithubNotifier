@@ -34,5 +34,16 @@
     <true/>
     <key>SUPublicEDKey</key>
     <string>Xqf5B0TuOjxRegR76wxXvw7fIOc+6Pj1IZ5IVBbM4qw=</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.samzong.GitHubNotifier</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>githubnotifier</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

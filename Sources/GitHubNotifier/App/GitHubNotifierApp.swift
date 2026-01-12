@@ -14,6 +14,7 @@ import SwiftUI
 struct GitHubNotifierApp: App {
     @State private var notificationService: NotificationService
     @State private var activityService: ActivityService
+    @State private var searchService: SearchService
     @State private var ruleStorage = RuleStorage()
 
     /// Sparkle updater controller for automatic updates
@@ -36,6 +37,12 @@ struct GitHubNotifierApp: App {
             itemsService.configure(token: token)
         }
         _activityService = State(initialValue: itemsService)
+
+        let search = SearchService()
+        if let token {
+            search.configure(token: token)
+        }
+        _searchService = State(initialValue: search)
 
         // Create rule storage and inject into notification service
         let storage = RuleStorage()
@@ -64,6 +71,7 @@ struct GitHubNotifierApp: App {
             MenuBarView()
                 .environment(notificationService)
                 .environment(activityService)
+                .environment(searchService)
         } label: {
             MenuBarLabel(unreadCount: notificationService.unreadCount)
         }
@@ -73,8 +81,28 @@ struct GitHubNotifierApp: App {
             SettingsView(updater: updaterController.updater)
                 .environment(notificationService)
                 .environment(activityService)
+                .environment(searchService)
                 .environment(ruleStorage)
         }
+
+        // Auxiliary windows (Search Management, future: Kanban, AI, etc.)
+        WindowGroup("GitHub Notifier", id: "auxiliary") {
+            WindowView()
+                .environment(searchService)
+                .onOpenURL { url in
+                    // Handle URL opening logic if needed, or rely on WindowManager's state
+                    // The WindowManager.shared.activeWindow might be set by the caller before opening,
+                    // or we can parse the URL here.
+                    if let host = url.host, host == "window" {
+                        let path = url.path.trimmingCharacters(in: .init(charactersIn: "/"))
+                        if let windowId = WindowIdentifier(rawValue: path) {
+                            WindowManager.shared.activeWindow = windowId
+                        }
+                    }
+                }
+        }
+        .defaultSize(width: 720, height: 520)
+        .handlesExternalEvents(matching: Set(arrayLiteral: "window"))
     }
 }
 

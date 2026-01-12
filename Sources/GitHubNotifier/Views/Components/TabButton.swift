@@ -12,15 +12,17 @@ struct TabButton: View {
             HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 12))
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                if isSelected {
+                    Text(title)
+                        .font(.system(size: 12, weight: .medium))
+                }
                 if showDot {
                     Circle()
                         .fill(Color.red)
                         .frame(width: 6, height: 6)
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, isSelected ? 10 : 8)
             .padding(.vertical, 6)
             .background(
                 isSelected

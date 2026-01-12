@@ -2,15 +2,26 @@ import GitHubNotifierCore
 import SwiftUI
 
 struct HeaderView: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var selectedTab: MenuBarMainTab
     let unreadCount: Int
-    let isLoading: Bool
     let currentUserLogin: String?
 
-    let onRefresh: () async -> Void
     let onOpenSettings: () -> Void
     let onQuit: () -> Void
+
+    init(
+        selectedTab: Binding<MenuBarMainTab>,
+        unreadCount: Int,
+        currentUserLogin: String?,
+        onOpenSettings: @escaping () -> Void,
+        onQuit: @escaping () -> Void
+    ) {
+        self._selectedTab = selectedTab
+        self.unreadCount = unreadCount
+        self.currentUserLogin = currentUserLogin
+        self.onOpenSettings = onOpenSettings
+        self.onQuit = onQuit
+    }
 
     var body: some View {
         HStack {
@@ -29,32 +40,18 @@ struct HeaderView: View {
                     isSelected: selectedTab == .activity,
                     action: { selectedTab = .activity }
                 )
+
+                TabButton(
+                    title: "menubar.tab.search".localized,
+                    icon: "magnifyingglass",
+                    isSelected: selectedTab == .search,
+                    action: { selectedTab = .search }
+                )
             }
 
             Spacer()
 
-            HStack(spacing: 8) {
-                Button {
-                    Task { await onRefresh() }
-                } label: {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 12))
-                        .rotationEffect(.degrees(isLoading && !reduceMotion ? 360 : 0))
-                        .animation(
-                            isLoading && !reduceMotion
-                                ? .linear(duration: 1).repeatForever(autoreverses: false)
-                                : .default,
-                            value: isLoading
-                        )
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .help("menubar.refresh".localized)
-                .disabled(isLoading)
-
-                Divider()
-                    .frame(height: 16)
-
+            if selectedTab != .search {
                 Menu {
                     if let login = currentUserLogin {
                         Text("settings.user".localized + ": @\(login)")

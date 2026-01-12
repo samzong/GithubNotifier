@@ -66,6 +66,7 @@
 "menubar.tab.prs" = "PRs";
 "menubar.tab.notifications" = "Notifications";
 "menubar.tab.activity" = "Activities";
+"menubar.tab.search" = "Search";
 "menubar.no_items" = "No items found";
 "menubar.filter.all" = "All";
 "menubar.filter.created" = "Created";

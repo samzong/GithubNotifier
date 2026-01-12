@@ -5,12 +5,15 @@ import SwiftUI
 struct MenuBarView: View {
     @Environment(NotificationService.self) private var notificationService
     @Environment(ActivityService.self) private var activityService
+    @Environment(SearchService.self) private var searchService
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("menubar.selectedMainTab") private var selectedMainTabRawValue = MenuBarMainTab.activity.rawValue
     @AppStorage("menubar.selectedSubTab") private var selectedSubTabRawValue = MenuBarSubTab.issues.rawValue
     @AppStorage("menubar.selectedActivityFilter") private var selectedActivityFilterRawValue = ActivityFilter.all.rawValue
+    @AppStorage("searchList.selectedFilterId") private var selectedSearchFilterIdString: String?
 
     @State private var isMarkingAsRead = false
 
@@ -33,6 +36,11 @@ struct MenuBarView: View {
         nonmutating set { selectedActivityFilterRawValue = newValue.rawValue }
     }
 
+    private var selectedSearchFilterId: UUID? {
+        get { selectedSearchFilterIdString.flatMap { UUID(uuidString: $0) } }
+        nonmutating set { selectedSearchFilterIdString = newValue?.uuidString }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if hasToken {
@@ -42,9 +50,7 @@ struct MenuBarView: View {
                         set: { selectedMainTab = $0 }
                     ),
                     unreadCount: notificationService.unreadCount,
-                    isLoading: notificationService.isLoading || activityService.isLoading,
                     currentUserLogin: notificationService.currentUser?.login,
-                    onRefresh: refreshCurrentTab,
                     onOpenSettings: { openSettingsAndBringToFront() },
                     onQuit: { NSApplication.shared.terminate(nil) }
                 )
@@ -61,8 +67,19 @@ struct MenuBarView: View {
                     issuesCount: currentIssuesCount,
                     prsCount: currentPrsCount,
                     isMarkingAsRead: isMarkingAsRead,
+                    isLoading: notificationService.isLoading || activityService.isLoading || searchService.isLoading,
+                    pinnedSearches: searchService.savedSearches.filter { $0.isEnabled && $0.isPinned },
+                    selectedSearchId: Binding(
+                        get: { selectedSearchFilterId },
+                        set: { selectedSearchFilterId = $0 }
+                    ),
                     onMarkAsRead: markFilteredAsRead,
-                    onOpenRules: { openSettingsAndBringToFront(tab: .rules) }
+                    onOpenRules: { openSettingsAndBringToFront(tab: .rules) },
+                    onRefresh: refreshCurrentTab,
+                    onManage: selectedMainTab == .search ? {
+                        WindowManager.shared.activeWindow = .searchManagement
+                        openWindow(id: "auxiliary")
+                    } : nil
                 )
 
                 if selectedMainTab == .activity {
@@ -116,6 +133,18 @@ struct MenuBarView: View {
                 openNotificationGroup(group)
             }
             .environment(notificationService)
+
+        case .search:
+            SearchListView(
+                selectedSearchId: Binding(
+                    get: { selectedSearchFilterId },
+                    set: { selectedSearchFilterId = $0 }
+                )
+            ) { item in
+                closeMenuBarWindow()
+                openActivityItem(item)
+            }
+            .environment(searchService)
         }
     }
 
@@ -125,6 +154,8 @@ struct MenuBarView: View {
             notificationService.unreadCount
         case .activity:
             activityService.items(for: .all).count
+        case .search:
+            searchService.items.count
         }
     }
 
@@ -134,6 +165,8 @@ struct MenuBarView: View {
             notificationService.notifications.count { $0.notificationType == .issue }
         case .activity:
             activityService.issues(for: .all).count
+        case .search:
+            searchService.items.filter { $0.itemType == .issue }.count
         }
     }
 
@@ -143,6 +176,8 @@ struct MenuBarView: View {
             notificationService.notifications.count { $0.notificationType == .pullRequest }
         case .activity:
             activityService.pullRequests(for: .all).count
+        case .search:
+            searchService.items.filter { $0.itemType == .pullRequest }.count
         }
     }
 
@@ -181,6 +216,9 @@ struct MenuBarView: View {
         if activityService.items.isEmpty {
             await activityService.fetchMyItems()
         }
+        if searchService.items.isEmpty {
+            await searchService.fetchAll()
+        }
     }
 
     @MainActor
@@ -197,6 +235,8 @@ struct MenuBarView: View {
             case .prs:
                 await activityService.fetchMyItems(type: .pullRequest)
             }
+        case .search:
+            await searchService.fetchAll()
         }
     }
 
