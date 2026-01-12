@@ -35,8 +35,58 @@ struct ActivityListView: View {
                             .padding(.leading, 44)
                     }
                 }
+
+                if totalFilteredCount > displayedItems.count {
+                    truncationFooter
+                }
             }
         }
+    }
+
+    private var truncationFooter: some View {
+        Button {
+            if let url = viewAllURL {
+                NSWorkspace.shared.open(url)
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text("menubar.view_all_on_github".localized)
+                    .font(.caption)
+                Image(systemName: "arrow.up.right")
+                    .font(.caption2)
+            }
+            .foregroundStyle(Color.accentColor)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var viewAllURL: URL? {
+        let baseURL = "https://github.com"
+        let typeFilter = switch subTab {
+        case .all:
+            ""
+        case .issues:
+            "+type:issue"
+        case .prs:
+            "+type:pr"
+        }
+
+        let stateFilter = switch filter {
+        case .all:
+            "is:open"
+        case .assigned:
+            "is:open+assignee:@me"
+        case .created:
+            "is:open+author:@me"
+        case .mentioned:
+            "is:open+mentions:@me"
+        case .reviewRequested:
+            "is:open+review-requested:@me"
+        }
+
+        return URL(string: "\(baseURL)/issues?q=\(stateFilter)\(typeFilter)")
     }
 
     private var loadingView: some View {
@@ -81,11 +131,22 @@ struct ActivityListView: View {
     private var displayedItems: [SearchResultItem] {
         switch subTab {
         case .all:
-            return Array(filteredItems.prefix(20))
+            Array(filteredItems.prefix(20))
         case .issues:
-            return Array(filteredItems.filter { $0.itemType == .issue }.prefix(20))
+            Array(filteredItems.filter { $0.itemType == .issue }.prefix(20))
         case .prs:
-            return Array(filteredItems.filter { $0.itemType == .pullRequest }.prefix(20))
+            Array(filteredItems.filter { $0.itemType == .pullRequest }.prefix(20))
+        }
+    }
+
+    private var totalFilteredCount: Int {
+        switch subTab {
+        case .all:
+            filteredItems.count
+        case .issues:
+            filteredItems.count(where: { $0.itemType == .issue })
+        case .prs:
+            filteredItems.count(where: { $0.itemType == .pullRequest })
         }
     }
 

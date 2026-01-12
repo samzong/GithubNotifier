@@ -39,8 +39,29 @@ struct NotificationListView: View {
                             .padding(.leading, 48)
                     }
                 }
+
+                viewAllFooter
             }
         }
+    }
+
+    private var viewAllFooter: some View {
+        Button {
+            if let url = URL(string: "https://github.com/notifications") {
+                NSWorkspace.shared.open(url)
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text("menubar.view_all_on_github".localized)
+                    .font(.caption)
+                Image(systemName: "arrow.up.right")
+                    .font(.caption2)
+            }
+            .foregroundStyle(Color.accentColor)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
     }
 
     private var loadingView: some View {

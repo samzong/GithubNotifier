@@ -5,7 +5,6 @@ struct ActivityRowView: View {
     let item: SearchResultItem
     let onTap: () -> Void
 
-
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .top, spacing: 8) {

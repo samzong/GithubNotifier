@@ -2,6 +2,7 @@ import GitHubNotifierCore
 import SwiftUI
 
 struct HeaderView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var selectedTab: MenuBarMainTab
     let unreadCount: Int
     let isLoading: Bool
@@ -38,14 +39,17 @@ struct HeaderView: View {
                 } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.system(size: 12))
-                        .rotationEffect(.degrees(isLoading ? 360 : 0))
+                        .rotationEffect(.degrees(isLoading && !reduceMotion ? 360 : 0))
                         .animation(
-                            isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .linear(duration: 0),
+                            isLoading && !reduceMotion
+                                ? .linear(duration: 1).repeatForever(autoreverses: false)
+                                : .default,
                             value: isLoading
                         )
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
+                .help("menubar.refresh".localized)
                 .disabled(isLoading)
 
                 Divider()

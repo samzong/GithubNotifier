@@ -10,5 +10,3 @@ public enum MenuBarSubTab: String, CaseIterable, Sendable {
     case issues
     case prs
 }
-
-

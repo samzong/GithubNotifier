@@ -12,7 +12,6 @@ struct NotificationRowView: View {
         group.latestNotification
     }
 
-
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .top, spacing: 8) {
