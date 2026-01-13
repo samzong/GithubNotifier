@@ -13,75 +13,140 @@ struct SearchWindowView: View {
     @State private var selectedSearchId: UUID?
     @State private var editingName = ""
     @State private var editingQuery = ""
-    @State private var editingType: SearchType = .all
     @State private var editingIsPinned = false
     @State private var previewResults: [SearchResultItem] = []
     @State private var isLoadingPreview = false
     @State private var isNewSearch = false
+    @State private var isEditing = false
+    @State private var showDeleteConfirmation = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var queryWebURL: URL? {
+        let query = isEditing || isNewSearch ? editingQuery : (currentSearch?.query ?? "")
+        guard !query.isEmpty,
+              let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+        else { return nil }
+        return URL(string: "https://github.com/search?q=\(encoded)")
+    }
+
+    private var currentSearch: SavedSearch? {
+        guard let id = selectedSearchId else { return nil }
+        return searchService.savedSearches.first { $0.id == id }
+    }
 
     var body: some View {
         NavigationSplitView {
             sidebar
         } detail: {
             detailView
+                .toolbar {
+                    // Title on the left
+                    ToolbarItem(placement: .navigation) {
+                        if isEditing || isNewSearch {
+                            TextField("Search Name", text: $editingName)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 200)
+                        } else if let search = currentSearch {
+                            Text(search.name)
+                                .font(.headline)
+                        }
+                    }
+
+                    // Actions on the right
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        if isEditing || isNewSearch {
+                            Button("Cancel") {
+                                if isNewSearch {
+                                    isNewSearch = false
+                                    isEditing = false
+                                } else {
+                                    loadSelectedSearch(selectedSearchId)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .foregroundStyle(.secondary)
+
+                            Button("Save") { saveCurrentSearch() }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(editingName.isEmpty || editingQuery.isEmpty)
+                        } else if selectedSearchId != nil {
+                            Button("Edit") { isEditing = true }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.blue)
+
+                            Button("Delete") {
+                                showDeleteConfirmation = true
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.red)
+                        }
+                    }
+                }
         }
         .navigationSplitViewStyle(.balanced)
-        .frame(minWidth: 680, minHeight: 480)
+        .frame(minWidth: 800, minHeight: 600)
+        .navigationTitle("")
+        .confirmationDialog(
+            "Delete Search",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let id = selectedSearchId {
+                    deleteSearch(id)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete this search? This action cannot be undone.")
+        }
     }
 
     // MARK: - Sidebar
 
     @ViewBuilder private var sidebar: some View {
-        VStack(spacing: 0) {
-            List(selection: $selectedSearchId) {
-                ForEach(searchService.savedSearches) { search in
-                    SearchSidebarRow(search: search)
-                        .tag(search.id)
-                        .contextMenu {
-                            Button(search.isEnabled ? "Disable" : "Enable") {
-                                searchService.toggleSearch(id: search.id)
-                            }
-                            Divider()
-                            Button("Delete", role: .destructive) {
-                                deleteSearch(search.id)
-                            }
+        List(selection: $selectedSearchId) {
+            ForEach(searchService.savedSearches) { search in
+                SearchSidebarRow(search: search)
+                    .tag(search.id)
+                    .contextMenu {
+                        Button(search.isPinned ? "Unpin from Tab" : "Pin to Tab") {
+                            searchService.updateSearch(
+                                id: search.id,
+                                options: .init(isPinned: !search.isPinned)
+                            )
                         }
-                }
+                        Button(search.isEnabled ? "Disable" : "Enable") {
+                            searchService.toggleSearch(id: search.id)
+                        }
+                        Divider()
+                        Button("Delete", role: .destructive) {
+                            deleteSearch(search.id)
+                        }
+                    }
             }
-            .listStyle(.sidebar)
-            .onChange(of: selectedSearchId) { _, newId in
-                loadSelectedSearch(newId)
-            }
-
-            Divider()
-
-            HStack {
-                Button {
-                    createNewSearch()
-                } label: {
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("Saved Searches")
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button { createNewSearch() } label: {
                     Image(systemName: "plus")
                 }
-                .buttonStyle(.borderless)
                 .help("Add new search")
-
-                Spacer()
             }
-            .padding(8)
         }
-        .navigationTitle("Saved Searches")
+        .onChange(of: selectedSearchId) { _, newId in
+            loadSelectedSearch(newId)
+        }
     }
 
     // MARK: - Detail View
 
     @ViewBuilder private var detailView: some View {
         if selectedSearchId != nil || isNewSearch {
-            VStack(spacing: 0) {
-                editorSection
-                Divider()
-                previewSection
-            }
+            contentSection
         } else {
             ContentUnavailableView(
                 "No Search Selected",
@@ -91,88 +156,70 @@ struct SearchWindowView: View {
         }
     }
 
-    // MARK: - Editor Section
+    // MARK: - Content Section
 
-    @ViewBuilder private var editorSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(isNewSearch ? "New Search" : "Edit Search")
-                    .font(.headline)
-                Spacer()
-                Button("Save") {
-                    saveCurrentSearch()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(editingName.isEmpty || editingQuery.isEmpty)
-            }
+    @ViewBuilder private var contentSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Query area
+            querySection
 
-            HStack {
-                TextField("Name", text: $editingName)
-                    .textFieldStyle(.roundedBorder)
-
-                Picker("Type", selection: $editingType) {
-                    ForEach(SearchType.allCases) { type in
-                        Label(type.displayName, systemImage: type.icon)
-                            .tag(type)
-                    }
-                }
-                .frame(width: 140)
-
-                Toggle(isOn: $editingIsPinned) {
-                    Image(systemName: editingIsPinned ? "pin.fill" : "pin.slash")
-                        .foregroundStyle(editingIsPinned ? .orange : .secondary)
-                }
-                .toggleStyle(.button)
-                .help("Pin to Search Tab")
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Query")
-                    .font(.subheadline)
+            // GitHub link
+            if let url = queryWebURL {
+                Link(url.absoluteString, destination: url)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Divider()
+
+            // Preview results
+            previewSection
+        }
+        .padding(16)
+    }
+
+    // MARK: - Query Section
+
+    @ViewBuilder private var querySection: some View {
+        HStack(alignment: .top, spacing: 12) {
+            if isEditing || isNewSearch {
                 TextEditor(text: $editingQuery)
                     .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 60, maxHeight: 100)
                     .scrollContentBackground(.hidden)
+                    .padding(8)
+                    .frame(minHeight: 60, maxHeight: 120)
                     .background(Color(nsColor: .controlBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                     )
-
-                if !editingQuery.isEmpty,
-                   let encoded = editingQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-                   let url = URL(string: "https://github.com/search?q=\(encoded)") {
-                    Link(destination: url) {
-                        Label("View on GitHub (Web)", systemImage: "safari")
-                            .font(.caption)
-                    }
-                    .padding(.top, 4)
-                }
+            } else if let search = currentSearch {
+                Text(search.query)
+                    .font(.system(.body, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
-            HStack {
+            VStack(spacing: 8) {
                 Button("Preview") {
+                    if !isEditing, let search = currentSearch {
+                        editingQuery = search.query
+                    }
                     Task { await runPreview() }
                 }
-                .disabled(editingQuery.isEmpty)
+                .disabled((isEditing || isNewSearch) && editingQuery.isEmpty)
 
                 if isLoadingPreview {
                     ProgressView()
                         .controlSize(.small)
-                        .padding(.leading, 4)
-                }
-
-                Spacer()
-
-                Link(destination: URL(string: "https://docs.github.com/en/search-github/searching-on-github")!) {
-                    Label("Search Syntax Help", systemImage: "questionmark.circle")
-                        .font(.caption)
                 }
             }
         }
-        .padding(16)
     }
 
     // MARK: - Preview Section
@@ -181,28 +228,29 @@ struct SearchWindowView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Preview Results")
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(previewResults.count) items")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                if !previewResults.isEmpty {
+                    Text("\(previewResults.count) items")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
 
             if previewResults.isEmpty {
                 ContentUnavailableView(
-                    "No Results",
+                    "No Preview",
                     systemImage: "doc.text.magnifyingglass",
-                    description: Text("Run a preview to see search results.")
+                    description: Text("Click Preview to test the query.")
                 )
-                .frame(maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(previewResults) { item in
                     SearchPreviewRow(item: item)
                 }
                 .listStyle(.plain)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
         .frame(maxHeight: .infinity)
@@ -212,10 +260,10 @@ struct SearchWindowView: View {
 
     private func createNewSearch() {
         isNewSearch = true
+        isEditing = true
         selectedSearchId = nil
         editingName = ""
         editingQuery = ""
-        editingType = .all
         editingIsPinned = false
         previewResults = []
     }
@@ -225,31 +273,36 @@ struct SearchWindowView: View {
             return
         }
         isNewSearch = false
+        isEditing = false
         editingName = search.name
         editingQuery = search.query
-        editingType = search.type
         editingIsPinned = search.isPinned
-        previewResults = searchService.resultsBySearchId[id] ?? []
+        previewResults = []
     }
 
     private func saveCurrentSearch() {
         if isNewSearch {
-            searchService.addSearch(name: editingName, query: editingQuery, type: editingType, isPinned: editingIsPinned)
-            // Select the newly created search
+            searchService.addSearch(
+                name: editingName,
+                query: editingQuery,
+                type: .all,
+                isPinned: editingIsPinned
+            )
             if let newSearch = searchService.savedSearches.last {
                 selectedSearchId = newSearch.id
             }
             isNewSearch = false
+            isEditing = false
         } else if let id = selectedSearchId {
             searchService.updateSearch(
                 id: id,
                 options: .init(
                     name: editingName,
                     query: editingQuery,
-                    isPinned: editingIsPinned,
-                    type: editingType
+                    isPinned: editingIsPinned
                 )
             )
+            isEditing = false
         }
     }
 
@@ -259,9 +312,9 @@ struct SearchWindowView: View {
             selectedSearchId = nil
             editingName = ""
             editingQuery = ""
-            editingType = .all
             editingIsPinned = false
             previewResults = []
+            isEditing = false
         }
     }
 
@@ -279,25 +332,20 @@ private struct SearchSidebarRow: View {
     let search: SavedSearch
 
     var body: some View {
-        HStack {
-            Image(systemName: search.type.icon)
-                .foregroundStyle(search.isEnabled ? .primary : .secondary)
-
-            VStack(alignment: .leading) {
-                HStack(spacing: 4) {
-                    Text(search.name)
-                        .lineLimit(1)
-                    if search.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.system(size: 9))
-                            .foregroundStyle(.orange)
-                    }
-                }
-                Text(search.query)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Text(search.name)
                     .lineLimit(1)
+                if search.isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
+            Text(search.query)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
         }
         .opacity(search.isEnabled ? 1.0 : 0.6)
     }
@@ -307,16 +355,17 @@ private struct SearchPreviewRow: View {
     let item: SearchResultItem
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: item.itemType == .pullRequest ? "arrow.triangle.pull" : "circle.dotted")
+                .font(.body)
                 .foregroundStyle(item.itemType == .pullRequest ? .purple : .green)
-                .frame(width: 16)
+                .frame(width: 20)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(item.title)
                     .lineLimit(1)
                     .font(.callout)
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     Text("\(item.repositoryOwner)/\(item.repositoryName)")
                     Text("#\(item.number)")
                 }
@@ -328,8 +377,9 @@ private struct SearchPreviewRow: View {
 
             Text(item.state)
                 .font(.caption2)
+                .fontWeight(.medium)
                 .padding(.horizontal, 6)
-                .padding(.vertical, 2)
+                .padding(.vertical, 3)
                 .background(stateColor.opacity(0.15))
                 .foregroundStyle(stateColor)
                 .clipShape(Capsule())
