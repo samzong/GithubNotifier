@@ -29,10 +29,12 @@ struct NotificationListView: View {
                         group: group,
                         prState: service.getPRState(for: group.latestNotification),
                         issueState: service.getIssueState(for: group.latestNotification),
-                        ciStatus: service.getNotificationDetails(for: group.latestNotification)?.ciStatus
-                    ) {
-                        onGroupTap(group)
-                    }
+                        ciStatus: service.getNotificationDetails(for: group.latestNotification)?.ciStatus,
+                        onTap: { onGroupTap(group) },
+                        onMarkAsRead: {
+                            Task { await service.markGroupAsRead(group) }
+                        }
+                    )
 
                     if group.id != filteredGroups.last?.id {
                         Divider()

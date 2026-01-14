@@ -7,6 +7,9 @@ struct NotificationRowView: View {
     let issueState: IssueState?
     let ciStatus: CIStatus?
     let onTap: () -> Void
+    let onMarkAsRead: () -> Void
+
+    @State private var isHovered = false
 
     private var notification: GitHubNotification {
         group.latestNotification
@@ -59,13 +62,30 @@ struct NotificationRowView: View {
 
                 Spacer(minLength: 8)
 
-                notificationIcon
+                ZStack {
+                    notificationIcon
+                        .opacity(isHovered ? 0 : 1)
+
+                    Button {
+                        onMarkAsRead()
+                    } label: {
+                        Image(systemName: "checkmark.circle")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(isHovered ? 1 : 0)
+                    .help("Mark as read")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .contentShape(Rectangle())
         }
         .buttonStyle(.listRow)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 
     @ViewBuilder private var notificationIcon: some View {
