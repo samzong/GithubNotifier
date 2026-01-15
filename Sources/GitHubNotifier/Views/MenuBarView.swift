@@ -100,7 +100,7 @@ struct MenuBarView: View {
                 WelcomeView(onOpenSettings: { openSettingsAndBringToFront(tab: .account) })
             }
         }
-        .frame(width: 360, height: 520)
+        .frame(width: 380, height: 520)
         .background(Color(nsColor: .windowBackgroundColor))
         .task {
             clearInitialFocus()
