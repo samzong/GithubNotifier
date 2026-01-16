@@ -29,15 +29,17 @@ public struct RuleEngine: Sendable {
         notification: GitHubNotification,
         rule: NotificationRule
     ) -> Bool {
-        let conditionResults = rule.conditions.map { condition in
-            matchesCondition(notification: notification, condition: condition)
-        }
-
+        // Optimization: Use lazy evaluation to short-circuit condition checks.
+        // This avoids evaluating all conditions if the result is already determined.
         switch rule.logicOperator {
         case .and:
-            return conditionResults.allSatisfy(\.self)
+            return rule.conditions.allSatisfy { condition in
+                matchesCondition(notification: notification, condition: condition)
+            }
         case .any:
-            return conditionResults.contains { $0 }
+            return rule.conditions.contains { condition in
+                matchesCondition(notification: notification, condition: condition)
+            }
         }
     }
 
