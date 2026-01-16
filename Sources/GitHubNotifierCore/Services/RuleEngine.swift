@@ -4,6 +4,9 @@ import Foundation
 
 /// Engine for evaluating notifications against rules
 public struct RuleEngine: Sendable {
+    // Cache for compiled NSRegularExpression objects
+    private static var regexCache = NSCache<NSString, NSRegularExpression>()
+
     public init() {}
 
     /// Evaluate a notification against a list of rules
@@ -91,12 +94,20 @@ public struct RuleEngine: Sendable {
             return pattern == value
         }
 
-        // Convert wildcard pattern to regex
-        let regexPattern = "^" + NSRegularExpression.escapedPattern(for: pattern)
-            .replacingOccurrences(of: "\\*", with: ".*") + "$"
+        // Use cached regex if available
+        let regex: NSRegularExpression
+        if let cachedRegex = Self.regexCache.object(forKey: pattern as NSString) {
+            regex = cachedRegex
+        } else {
+            // Convert wildcard pattern to regex and cache it
+            let regexPattern = "^" + NSRegularExpression.escapedPattern(for: pattern)
+                .replacingOccurrences(of: "\\*", with: ".*") + "$"
 
-        guard let regex = try? NSRegularExpression(pattern: regexPattern, options: []) else {
-            return false
+            guard let newRegex = try? NSRegularExpression(pattern: regexPattern, options: []) else {
+                return false
+            }
+            Self.regexCache.setObject(newRegex, forKey: pattern as NSString)
+            regex = newRegex
         }
 
         let range = NSRange(value.startIndex..., in: value)
