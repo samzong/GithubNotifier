@@ -45,5 +45,10 @@ let package = Package(
                 ]),
             ]
         ),
+        .testTarget(
+            name: "GitHubNotifierCoreTests",
+            dependencies: ["GitHubNotifierCore"],
+            path: "Tests/GitHubNotifierCoreTests"
+        ),
     ]
 )
