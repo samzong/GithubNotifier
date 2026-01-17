@@ -4,23 +4,41 @@ import Foundation
 
 /// Engine for evaluating notifications against rules
 public struct RuleEngine: Sendable {
+    // Cache for compiled regex patterns to avoid recompilation overhead
+    private static nonisolated(unsafe) var regexCache: [String: NSRegularExpression] = [:]
+    private static let cacheLock = NSLock()
+
     public init() {}
 
-    /// Evaluate a notification against a list of rules
+    /// Prepare rules for evaluation (filter enabled and sort by priority)
+    /// This should be called once before iterating over notifications
+    public func prepareRules(_ rules: [NotificationRule]) -> [NotificationRule] {
+        rules
+            .filter(\.isEnabled)
+            .sorted { $0.priority < $1.priority }
+    }
+
+    /// Evaluate a notification against a list of PREPARED rules
     /// Uses first-match strategy: returns result from first matching rule
+    public func evaluate(
+        notification: GitHubNotification,
+        preparedRules: [NotificationRule]
+    ) -> RuleResult {
+        for rule in preparedRules where matches(notification: notification, rule: rule) {
+            return buildResult(from: rule)
+        }
+        return .noMatch
+    }
+
+    /// Evaluate a notification against a list of raw rules
+    /// Uses first-match strategy: returns result from first matching rule
+    /// Note: Prefer using prepareRules() and the overload if evaluating against multiple notifications
     public func evaluate(
         notification: GitHubNotification,
         rules: [NotificationRule]
     ) -> RuleResult {
-        let enabledRules = rules
-            .filter(\.isEnabled)
-            .sorted { $0.priority < $1.priority }
-
-        for rule in enabledRules where matches(notification: notification, rule: rule) {
-            return buildResult(from: rule)
-        }
-
-        return .noMatch
+        let prepared = prepareRules(rules)
+        return evaluate(notification: notification, preparedRules: prepared)
     }
 
     // MARK: - Private
@@ -49,9 +67,9 @@ public struct RuleEngine: Sendable {
 
         switch condition.operator {
         case .equals:
-            return fieldValue.lowercased() == condition.value.lowercased()
+            return fieldValue.caseInsensitiveCompare(condition.value) == .orderedSame
         case .notEquals:
-            return fieldValue.lowercased() != condition.value.lowercased()
+            return fieldValue.caseInsensitiveCompare(condition.value) != .orderedSame
         case .matches:
             return wildcardMatch(pattern: condition.value, value: fieldValue)
         }
@@ -91,13 +109,25 @@ public struct RuleEngine: Sendable {
             return pattern == value
         }
 
-        // Convert wildcard pattern to regex
-        let regexPattern = "^" + NSRegularExpression.escapedPattern(for: pattern)
-            .replacingOccurrences(of: "\\*", with: ".*") + "$"
+        // Use cached regex if available
+        let regex: NSRegularExpression? = Self.cacheLock.withLock {
+            if let cached = Self.regexCache[pattern] {
+                return cached
+            }
 
-        guard let regex = try? NSRegularExpression(pattern: regexPattern, options: []) else {
-            return false
+            // Convert wildcard pattern to regex
+            let regexPattern = "^" + NSRegularExpression.escapedPattern(for: pattern)
+                .replacingOccurrences(of: "\\*", with: ".*") + "$"
+
+            guard let newRegex = try? NSRegularExpression(pattern: regexPattern, options: []) else {
+                return nil
+            }
+
+            Self.regexCache[pattern] = newRegex
+            return newRegex
         }
+
+        guard let regex else { return false }
 
         let range = NSRange(value.startIndex..., in: value)
         return regex.firstMatch(in: value, options: [], range: range) != nil
