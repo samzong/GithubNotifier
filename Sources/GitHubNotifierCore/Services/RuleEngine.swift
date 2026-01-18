@@ -91,7 +91,32 @@ public struct RuleEngine: Sendable {
             return pattern == value
         }
 
-        // Convert wildcard pattern to regex
+        // Optimization: Handle simple wildcard cases without Regex
+        // Case 1: Prefix match "text*" (ends with * and no other *)
+        if pattern.hasSuffix("*") {
+            let prefix = String(pattern.dropLast())
+            if !prefix.contains("*") {
+                return value.hasPrefix(prefix)
+            }
+        }
+
+        // Case 2: Suffix match "*text" (starts with * and no other *)
+        if pattern.hasPrefix("*") {
+            let suffix = String(pattern.dropFirst())
+            if !suffix.contains("*") {
+                return value.hasSuffix(suffix)
+            }
+        }
+
+        // Case 3: Contains match "*text*" (starts and ends with *, no internal *)
+        if pattern.hasPrefix("*") && pattern.hasSuffix("*") {
+            let middle = String(pattern.dropFirst().dropLast())
+            if !middle.contains("*") {
+                return value.contains(middle)
+            }
+        }
+
+        // Fallback: Convert wildcard pattern to regex
         let regexPattern = "^" + NSRegularExpression.escapedPattern(for: pattern)
             .replacingOccurrences(of: "\\*", with: ".*") + "$"
 
