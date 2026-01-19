@@ -91,6 +91,24 @@ public struct RuleEngine: Sendable {
             return pattern == value
         }
 
+        // Optimization: Handle common wildcard patterns without regex
+        if pattern.first == "*" && pattern.last == "*" {
+            let inner = pattern.dropFirst().dropLast()
+            if !inner.contains("*") {
+                return value.contains(inner)
+            }
+        } else if pattern.last == "*" {
+            let prefix = pattern.dropLast()
+            if !prefix.contains("*") {
+                return value.hasPrefix(prefix)
+            }
+        } else if pattern.first == "*" {
+            let suffix = pattern.dropFirst()
+            if !suffix.contains("*") {
+                return value.hasSuffix(suffix)
+            }
+        }
+
         // Convert wildcard pattern to regex
         let regexPattern = "^" + NSRegularExpression.escapedPattern(for: pattern)
             .replacingOccurrences(of: "\\*", with: ".*") + "$"
