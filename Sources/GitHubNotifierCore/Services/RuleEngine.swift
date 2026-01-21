@@ -49,9 +49,9 @@ public struct RuleEngine: Sendable {
 
         switch condition.operator {
         case .equals:
-            return fieldValue.lowercased() == condition.value.lowercased()
+            return fieldValue.caseInsensitiveCompare(condition.value) == .orderedSame
         case .notEquals:
-            return fieldValue.lowercased() != condition.value.lowercased()
+            return fieldValue.caseInsensitiveCompare(condition.value) != .orderedSame
         case .matches:
             return wildcardMatch(pattern: condition.value, value: fieldValue)
         }
@@ -79,33 +79,30 @@ public struct RuleEngine: Sendable {
     /// - "*" matches anything
     /// - "owner/repo" matches exactly "owner/repo"
     private func wildcardMatch(pattern: String, value: String) -> Bool {
-        let pattern = pattern.lowercased()
-        let value = value.lowercased()
-
         // Simple case: exact match or universal wildcard
         if pattern == "*" {
             return true
         }
 
         if !pattern.contains("*") {
-            return pattern == value
+            return value.caseInsensitiveCompare(pattern) == .orderedSame
         }
 
         // Optimization: Handle common wildcard patterns without regex
         if pattern.first == "*" && pattern.last == "*" {
             let inner = pattern.dropFirst().dropLast()
             if !inner.contains("*") {
-                return value.contains(inner)
+                return value.localizedCaseInsensitiveContains(inner)
             }
         } else if pattern.last == "*" {
             let prefix = pattern.dropLast()
             if !prefix.contains("*") {
-                return value.hasPrefix(prefix)
+                return value.range(of: prefix, options: [.anchored, .caseInsensitive]) != nil
             }
         } else if pattern.first == "*" {
             let suffix = pattern.dropFirst()
             if !suffix.contains("*") {
-                return value.hasSuffix(suffix)
+                return value.range(of: suffix, options: [.anchored, .backwards, .caseInsensitive]) != nil
             }
         }
 
@@ -113,7 +110,7 @@ public struct RuleEngine: Sendable {
         let regexPattern = "^" + NSRegularExpression.escapedPattern(for: pattern)
             .replacingOccurrences(of: "\\*", with: ".*") + "$"
 
-        guard let regex = try? NSRegularExpression(pattern: regexPattern, options: []) else {
+        guard let regex = try? NSRegularExpression(pattern: regexPattern, options: [.caseInsensitive]) else {
             return false
         }
 
