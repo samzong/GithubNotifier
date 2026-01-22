@@ -4,16 +4,14 @@ import Foundation
 public struct NotificationGroup: Identifiable, Sendable {
     public let id: String
     public let notifications: [GitHubNotification]
+    /// The most recent notification (used for display)
+    public let latestNotification: GitHubNotification
 
     public init(id: String, notifications: [GitHubNotification]) {
         self.id = id
         self.notifications = notifications
-    }
-
-    /// The most recent notification (used for display)
-    public var latestNotification: GitHubNotification {
         // swiftlint:disable:next force_unwrapping
-        notifications.max(by: { $0.updatedAt < $1.updatedAt })!
+        self.latestNotification = notifications.max(by: { $0.updatedAt < $1.updatedAt })!
     }
 
     /// Convenience accessors from latest notification
