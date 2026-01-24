@@ -49,9 +49,9 @@ public struct RuleEngine: Sendable {
 
         switch condition.operator {
         case .equals:
-            return fieldValue.lowercased() == condition.value.lowercased()
+            return fieldValue.caseInsensitiveCompare(condition.value) == .orderedSame
         case .notEquals:
-            return fieldValue.lowercased() != condition.value.lowercased()
+            return fieldValue.caseInsensitiveCompare(condition.value) != .orderedSame
         case .matches:
             return wildcardMatch(pattern: condition.value, value: fieldValue)
         }
@@ -79,46 +79,46 @@ public struct RuleEngine: Sendable {
     /// - "*" matches anything
     /// - "owner/repo" matches exactly "owner/repo"
     private func wildcardMatch(pattern: String, value: String) -> Bool {
-        let pattern = pattern.lowercased()
-        let value = value.lowercased()
-
         // Simple case: exact match or universal wildcard
         if pattern == "*" {
             return true
         }
 
         if !pattern.contains("*") {
-            return pattern == value
+            return pattern.caseInsensitiveCompare(value) == .orderedSame
         }
 
         // Optimization: Handle common wildcard patterns without regex
         if pattern.first == "*" && pattern.last == "*" {
             let inner = pattern.dropFirst().dropLast()
             if !inner.contains("*") {
-                return value.contains(inner)
+                return value.range(of: inner, options: .caseInsensitive) != nil
             }
         } else if pattern.last == "*" {
             let prefix = pattern.dropLast()
             if !prefix.contains("*") {
-                return value.hasPrefix(prefix)
+                return value.range(of: prefix, options: [.caseInsensitive, .anchored]) != nil
             }
         } else if pattern.first == "*" {
             let suffix = pattern.dropFirst()
             if !suffix.contains("*") {
-                return value.hasSuffix(suffix)
+                return value.range(of: suffix, options: [.caseInsensitive, .anchored, .backwards]) != nil
             }
         }
 
         // Convert wildcard pattern to regex
-        let regexPattern = "^" + NSRegularExpression.escapedPattern(for: pattern)
+        let lowerPattern = pattern.lowercased()
+        let lowerValue = value.lowercased()
+
+        let regexPattern = "^" + NSRegularExpression.escapedPattern(for: lowerPattern)
             .replacingOccurrences(of: "\\*", with: ".*") + "$"
 
         guard let regex = try? NSRegularExpression(pattern: regexPattern, options: []) else {
             return false
         }
 
-        let range = NSRange(value.startIndex..., in: value)
-        return regex.firstMatch(in: value, options: [], range: range) != nil
+        let range = NSRange(lowerValue.startIndex..., in: lowerValue)
+        return regex.firstMatch(in: lowerValue, options: [], range: range) != nil
     }
 
     private func buildResult(from rule: NotificationRule) -> RuleResult {
