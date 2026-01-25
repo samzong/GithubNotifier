@@ -285,10 +285,13 @@ public class NotificationService {
         if let ruleStorage {
             var notificationsToSend: [GitHubNotification] = []
 
+            // Optimize rules once before processing loop
+            let preparedRules = ruleEngine.prepare(rules: ruleStorage.rules)
+
             for notification in newNotifications {
                 let result = ruleEngine.evaluate(
                     notification: notification,
-                    rules: ruleStorage.rules
+                    rules: preparedRules
                 )
 
                 // Mark as read if rule dictates
