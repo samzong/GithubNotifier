@@ -3,7 +3,14 @@ import Foundation
 @Observable
 @MainActor
 public class NotificationService {
-    public var notifications: [GitHubNotification] = []
+    public var notifications: [GitHubNotification] = [] {
+        didSet {
+            updateGroupedNotifications()
+        }
+    }
+
+    public private(set) var groupedNotifications: [NotificationGroup] = []
+
     public var currentUser: GitHubGraphQLClient.ViewerInfo?
     public var isLoading = false
     public var errorMessage: String?
@@ -209,13 +216,13 @@ public class NotificationService {
         }
     }
 
-    /// Group notifications by Issue/PR for display
-    public var groupedNotifications: [NotificationGroup] {
+    /// Updates the cached grouped notifications
+    private func updateGroupedNotifications() {
         let groups = Dictionary(grouping: notifications) { notification -> String in
             notification.groupKey ?? notification.id
         }
 
-        return groups.map { key, notifications in
+        groupedNotifications = groups.map { key, notifications in
             NotificationGroup(id: key, notifications: notifications)
         }
         .sorted { $0.updatedAt > $1.updatedAt }
