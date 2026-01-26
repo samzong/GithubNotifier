@@ -29,14 +29,25 @@ struct SearchListView: View {
         Group {
             if searchService.savedSearches.isEmpty {
                 emptyStateNoSearches
-            } else if displayedItems.isEmpty {
-                if searchService.isLoading {
-                    loadingView
-                } else {
+            } else if searchService.isLoading && displayedItems.isEmpty && displayedRepositories.isEmpty {
+                loadingView
+            } else if selectedSearchId == nil {
+                // All mode: show both Issue/PR and Repository results
+                if displayedItems.isEmpty && displayedRepositories.isEmpty {
                     emptyStateNoResults
+                } else {
+                    combinedResultsList
                 }
+            } else if isRepositorySearch {
+                // Specific repository search selected
+                repositoryContent
             } else {
-                resultsList
+                // Specific Issue/PR search selected
+                if displayedItems.isEmpty {
+                    emptyStateNoResults
+                } else {
+                    resultsList
+                }
             }
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: displayedItems.count)
@@ -44,17 +55,60 @@ struct SearchListView: View {
 
     // MARK: - Computed Properties
 
+    /// Check if selected search is a repository type
+    private var isRepositorySearch: Bool {
+        guard let selectedSearchId else { return false }
+        return searchService.savedSearches.first { $0.id == selectedSearchId }?.type == .repository
+    }
+
     private var displayedItems: [SearchResultItem] {
         if let selectedSearchId {
-            // Filter by specific search
             searchService.resultsBySearchId[selectedSearchId] ?? []
         } else {
-            // Show all aggregated items
             searchService.items
         }
     }
 
-    // MARK: - Results List
+    private var displayedRepositories: [RepositorySearchItem] {
+        if let selectedSearchId {
+            searchService.repositoryResultsBySearchId[selectedSearchId] ?? []
+        } else {
+            searchService.repositoryItems
+        }
+    }
+
+    // MARK: - Combined Results List (All mode)
+
+    @ViewBuilder private var combinedResultsList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                // Issue/PR items
+                ForEach(displayedItems) { item in
+                    SearchRowView(item: item)
+                        .contentShape(Rectangle())
+                        .onTapGesture { onItemTapped(item) }
+                    Divider()
+                        .padding(.leading, 44)
+                }
+
+                // Repository items
+                ForEach(displayedRepositories) { repo in
+                    RepositoryRowView(repository: repo) {
+                        if let url = repo.webURL {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+
+                    if repo.id != displayedRepositories.last?.id {
+                        Divider()
+                            .padding(.leading, 44)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Results List (Issue/PR only)
 
     @ViewBuilder private var resultsList: some View {
         ScrollView {
@@ -65,6 +119,39 @@ struct SearchListView: View {
                         .onTapGesture { onItemTapped(item) }
 
                     if item.id != displayedItems.last?.id {
+                        Divider()
+                            .padding(.leading, 44)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Repository Content
+
+    @ViewBuilder private var repositoryContent: some View {
+        if displayedRepositories.isEmpty {
+            if searchService.isLoading {
+                loadingView
+            } else {
+                emptyStateNoResults
+            }
+        } else {
+            repositoryList
+        }
+    }
+
+    @ViewBuilder private var repositoryList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(displayedRepositories) { repo in
+                    RepositoryRowView(repository: repo) {
+                        if let url = repo.webURL {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+
+                    if repo.id != displayedRepositories.last?.id {
                         Divider()
                             .padding(.leading, 44)
                     }
@@ -111,3 +198,4 @@ struct SearchListView: View {
         .environment(SearchService())
         .frame(width: 360, height: 400)
 }
+

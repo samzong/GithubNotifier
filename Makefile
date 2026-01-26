@@ -146,6 +146,14 @@ dmg: ## Build DMGs for both architectures
 
 ##@ Other
 # ------------------------------------------------------------------------------
+.PHONY: install
+install: ## Build release and install to ~/Applications
+	$(call build_app,release)
+	@mkdir -p $(USER_APPLICATIONS)
+	@rm -rf $(INSTALL_PATH)
+	@cp -r $(RELEASE_APP) $(INSTALL_PATH)
+	@echo "$(GREEN)✅ Installed to $(INSTALL_PATH)$(NC)"
+
 .PHONY: clean
 clean: ## Clean build artifacts
 	swift package clean

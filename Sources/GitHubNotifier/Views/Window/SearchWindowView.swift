@@ -13,8 +13,10 @@ struct SearchWindowView: View {
     @State private var selectedSearchId: UUID?
     @State private var editingName = ""
     @State private var editingQuery = ""
+    @State private var editingType: SearchType = .all
     @State private var editingIsPinned = false
     @State private var previewResults: [SearchResultItem] = []
+    @State private var previewRepositories: [RepositorySearchItem] = []
     @State private var isLoadingPreview = false
     @State private var isNewSearch = false
     @State private var isEditing = false
@@ -182,41 +184,69 @@ struct SearchWindowView: View {
     // MARK: - Query Section
 
     @ViewBuilder private var querySection: some View {
-        HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Type selector (only when editing)
             if isEditing || isNewSearch {
-                TextEditor(text: $editingQuery)
-                    .font(.system(.body, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .frame(minHeight: 60, maxHeight: 120)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                    )
+                HStack {
+                    Text("Type:")
+                        .foregroundStyle(.secondary)
+                    Picker("", selection: $editingType) {
+                        ForEach(SearchType.allCases) { type in
+                            Label(type.displayName, systemImage: type.icon)
+                                .tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    Spacer()
+                }
             } else if let search = currentSearch {
-                Text(search.query)
-                    .font(.system(.body, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                HStack {
+                    Text("Type:")
+                        .foregroundStyle(.secondary)
+                    Label(search.type.displayName, systemImage: search.type.icon)
+                        .foregroundStyle(.primary)
+                }
             }
 
-            VStack(spacing: 8) {
-                Button("Preview") {
-                    if !isEditing, let search = currentSearch {
-                        editingQuery = search.query
-                    }
-                    Task { await runPreview() }
+            // Query editor
+            HStack(alignment: .top, spacing: 12) {
+                if isEditing || isNewSearch {
+                    TextEditor(text: $editingQuery)
+                        .font(.system(.body, design: .monospaced))
+                        .scrollContentBackground(.hidden)
+                        .padding(8)
+                        .frame(minHeight: 60, maxHeight: 120)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        )
+                } else if let search = currentSearch {
+                    Text(search.query)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
-                .disabled((isEditing || isNewSearch) && editingQuery.isEmpty)
 
-                if isLoadingPreview {
-                    ProgressView()
-                        .controlSize(.small)
+                VStack(spacing: 8) {
+                    Button("Preview") {
+                        if !isEditing, let search = currentSearch {
+                            editingQuery = search.query
+                            editingType = search.type
+                        }
+                        Task { await runPreview() }
+                    }
+                    .disabled((isEditing || isNewSearch) && editingQuery.isEmpty)
+
+                    if isLoadingPreview {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
                 }
             }
         }
@@ -231,21 +261,29 @@ struct SearchWindowView: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                 Spacer()
-                if !previewResults.isEmpty {
-                    Text("\(previewResults.count) items")
+                if !previewResults.isEmpty || !previewRepositories.isEmpty {
+                    Text("\(previewResults.count + previewRepositories.count) items")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
             }
 
-            if previewResults.isEmpty {
+            if previewResults.isEmpty && previewRepositories.isEmpty {
                 ContentUnavailableView(
                     "No Preview",
                     systemImage: "doc.text.magnifyingglass",
                     description: Text("Click Preview to test the query.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !previewRepositories.isEmpty {
+                // Repository preview
+                List(previewRepositories) { repo in
+                    RepositoryPreviewRow(repository: repo)
+                }
+                .listStyle(.plain)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
+                // Issue/PR preview
                 List(previewResults) { item in
                     SearchPreviewRow(item: item)
                 }
@@ -256,6 +294,7 @@ struct SearchWindowView: View {
         .frame(maxHeight: .infinity)
     }
 
+
     // MARK: - Actions
 
     private func createNewSearch() {
@@ -264,8 +303,10 @@ struct SearchWindowView: View {
         selectedSearchId = nil
         editingName = ""
         editingQuery = ""
+        editingType = .all
         editingIsPinned = false
         previewResults = []
+        previewRepositories = []
     }
 
     private func loadSelectedSearch(_ id: UUID?) {
@@ -276,8 +317,10 @@ struct SearchWindowView: View {
         isEditing = false
         editingName = search.name
         editingQuery = search.query
+        editingType = search.type
         editingIsPinned = search.isPinned
         previewResults = []
+        previewRepositories = []
     }
 
     private func saveCurrentSearch() {
@@ -285,7 +328,7 @@ struct SearchWindowView: View {
             searchService.addSearch(
                 name: editingName,
                 query: editingQuery,
-                type: .all,
+                type: editingType,
                 isPinned: editingIsPinned
             )
             if let newSearch = searchService.savedSearches.last {
@@ -299,7 +342,8 @@ struct SearchWindowView: View {
                 options: .init(
                     name: editingName,
                     query: editingQuery,
-                    isPinned: editingIsPinned
+                    isPinned: editingIsPinned,
+                    type: editingType
                 )
             )
             isEditing = false
@@ -321,7 +365,13 @@ struct SearchWindowView: View {
     @MainActor
     private func runPreview() async {
         isLoadingPreview = true
-        previewResults = await searchService.fetchPreview(query: editingQuery)
+        if editingType == .repository {
+            previewRepositories = await searchService.fetchRepositoryPreview(query: editingQuery)
+            previewResults = []
+        } else {
+            previewResults = await searchService.fetchPreview(query: editingQuery)
+            previewRepositories = []
+        }
         isLoadingPreview = false
     }
 }
@@ -401,7 +451,45 @@ private struct SearchPreviewRow: View {
     }
 }
 
+private struct RepositoryPreviewRow: View {
+    let repository: RepositorySearchItem
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: repository.isPrivate ? "lock.fill" : "folder")
+                .font(.body)
+                .foregroundStyle(repository.isFork ? .secondary : .primary)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(repository.fullName)
+                    .lineLimit(1)
+                    .font(.callout)
+                HStack(spacing: 6) {
+                    if let language = repository.language {
+                        Text(language)
+                    }
+                    Text(repository.createdAt.timeAgo())
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            HStack(spacing: 4) {
+                Image(systemName: "star")
+                Text("\(repository.stargazerCount)")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
 #Preview {
     SearchWindowView()
         .environment(SearchService())
 }
+
