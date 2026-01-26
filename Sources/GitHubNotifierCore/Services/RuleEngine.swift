@@ -92,7 +92,7 @@ public struct RuleEngine: Sendable {
         }
 
         // Optimization: Handle common wildcard patterns without regex
-        if pattern.first == "*" && pattern.last == "*" {
+        if pattern.first == "*", pattern.last == "*" {
             let inner = pattern.dropFirst().dropLast()
             if !inner.contains("*") {
                 return value.contains(inner)

@@ -195,6 +195,67 @@ public class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound])
     }
 
+    // MARK: - Search Result Notifications
+
+    public func sendSearchResultNotification(for item: SearchResultItem) async {
+        guard UserDefaults.standard.bool(forKey: "enableSystemNotifications") else {
+            return
+        }
+
+        let status = await checkAuthorizationStatus()
+        guard status == .authorized else { return }
+
+        let content = UNMutableNotificationContent()
+
+        let typeName = item.itemType == .pullRequest ? "Pull Request" : "Issue"
+        content.title = "\(typeName) - \(item.repositoryFullName)"
+        content.subtitle = item.title
+        content.body = "#\(item.number) • \(item.state) • \(item.updatedAt.timeAgo())"
+        content.sound = .default
+
+        if let url = item.webURL {
+            content.userInfo = ["url": url.absoluteString]
+        }
+
+        let identifier = "search-\(item.id)-\(Date().timeIntervalSince1970)"
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
+
+        try? await notificationCenter.add(request)
+    }
+
+    public func sendRepositoryNotification(for repository: RepositorySearchItem) async {
+        guard UserDefaults.standard.bool(forKey: "enableSystemNotifications") else {
+            return
+        }
+
+        let status = await checkAuthorizationStatus()
+        guard status == .authorized else { return }
+
+        let content = UNMutableNotificationContent()
+
+        content.title = "New Repository"
+        content.subtitle = repository.fullName
+        var bodyParts: [String] = []
+        if let desc = repository.description, !desc.isEmpty {
+            bodyParts.append(desc)
+        }
+        if let lang = repository.language {
+            bodyParts.append(lang)
+        }
+        bodyParts.append("⭐ \(repository.stargazerCount)")
+        content.body = bodyParts.joined(separator: " • ")
+        content.sound = .default
+
+        if let url = repository.webURL {
+            content.userInfo = ["url": url.absoluteString]
+        }
+
+        let identifier = "repo-\(repository.id)-\(Date().timeIntervalSince1970)"
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
+
+        try? await notificationCenter.add(request)
+    }
+
     // MARK: - Helper Methods
 
     private func buildHTMLURL(for notification: GitHubNotification) -> String? {
