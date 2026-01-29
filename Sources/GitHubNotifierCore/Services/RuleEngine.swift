@@ -6,21 +6,36 @@ import Foundation
 public struct RuleEngine: Sendable {
     public init() {}
 
-    /// Evaluate a notification against a list of rules
-    /// Uses first-match strategy: returns result from first matching rule
-    public func evaluate(
-        notification: GitHubNotification,
-        rules: [NotificationRule]
-    ) -> RuleResult {
-        let enabledRules = rules
+    /// Prepares rules for evaluation by filtering enabled ones and sorting by priority
+    /// This should be called once before iterating through notifications
+    public func prepareRules(_ rules: [NotificationRule]) -> [NotificationRule] {
+        rules
             .filter(\.isEnabled)
             .sorted { $0.priority < $1.priority }
+    }
 
-        for rule in enabledRules where matches(notification: notification, rule: rule) {
+    /// Evaluate a notification against a list of PREPARED rules
+    /// Assumes rules are already filtered and sorted
+    public func evaluate(
+        notification: GitHubNotification,
+        preparedRules: [NotificationRule]
+    ) -> RuleResult {
+        for rule in preparedRules where matches(notification: notification, rule: rule) {
             return buildResult(from: rule)
         }
 
         return .noMatch
+    }
+
+    /// Evaluate a notification against a list of rules
+    /// Uses first-match strategy: returns result from first matching rule
+    /// Convenience method that handles rule preparation internally
+    public func evaluate(
+        notification: GitHubNotification,
+        rules: [NotificationRule]
+    ) -> RuleResult {
+        let preparedRules = prepareRules(rules)
+        return evaluate(notification: notification, preparedRules: preparedRules)
     }
 
     // MARK: - Private
