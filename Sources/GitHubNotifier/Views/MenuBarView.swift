@@ -16,6 +16,7 @@ struct MenuBarView: View {
     @AppStorage("searchList.selectedFilterId") private var selectedSearchFilterIdString: String?
 
     @State private var isMarkingAsRead = false
+    @State private var visibleMainTabs = MenuBarMainTab.visibleTabs()
 
     private var hasToken: Bool {
         KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey) != nil
@@ -41,6 +42,13 @@ struct MenuBarView: View {
         nonmutating set { selectedSearchFilterIdString = newValue?.uuidString }
     }
 
+    private var effectiveMainTab: MenuBarMainTab {
+        if visibleMainTabs.contains(selectedMainTab) {
+            return selectedMainTab
+        }
+        return visibleMainTabs.first ?? .notifications
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if hasToken {
@@ -49,6 +57,7 @@ struct MenuBarView: View {
                         get: { selectedMainTab },
                         set: { selectedMainTab = $0 }
                     ),
+                    visibleTabs: visibleMainTabs,
                     unreadCount: notificationService.unreadCount,
                     currentUserLogin: notificationService.currentUser?.login,
                     onOpenSettings: { openSettingsAndBringToFront() },
@@ -62,7 +71,7 @@ struct MenuBarView: View {
                         get: { selectedSubTab },
                         set: { selectedSubTab = $0 }
                     ),
-                    mainTab: selectedMainTab,
+                    mainTab: effectiveMainTab,
                     allCount: currentAllCount,
                     issuesCount: currentIssuesCount,
                     prsCount: currentPrsCount,
@@ -76,12 +85,12 @@ struct MenuBarView: View {
                     onMarkAsRead: markFilteredAsRead,
                     onOpenRules: { openSettingsAndBringToFront(tab: .rules) },
                     onRefresh: refreshCurrentTab,
-                    onManage: selectedMainTab == .search ? {
+                    onManage: effectiveMainTab == .search ? {
                         openAuxiliaryWindowAndBringToFront(window: .searchManagement)
                     } : nil
                 )
 
-                if selectedMainTab == .activity {
+                if effectiveMainTab == .activity {
                     FilterBarView(
                         selectedFilter: Binding(
                             get: { selectedActivityFilter },
@@ -103,10 +112,15 @@ struct MenuBarView: View {
         .frame(width: 380, height: 520)
         .background(Color(nsColor: .windowBackgroundColor))
         .task {
+            normalizeSelectedMainTabIfNeeded()
             clearInitialFocus()
             await initialLoad()
         }
         .onChange(of: selectedMainTab) { _, newTab in
+            guard visibleMainTabs.contains(newTab) else {
+                normalizeSelectedMainTabIfNeeded()
+                return
+            }
             if newTab == .activity, selectedSubTab == .all {
                 selectedSubTab = .issues
             }
@@ -115,7 +129,7 @@ struct MenuBarView: View {
     }
 
     @ViewBuilder private var contentView: some View {
-        switch selectedMainTab {
+        switch effectiveMainTab {
         case .activity:
             ActivityListView(
                 subTab: selectedSubTab,
@@ -148,7 +162,7 @@ struct MenuBarView: View {
     }
 
     private var currentAllCount: Int {
-        switch selectedMainTab {
+        switch effectiveMainTab {
         case .notifications:
             notificationService.unreadCount
         case .activity:
@@ -159,7 +173,7 @@ struct MenuBarView: View {
     }
 
     private var currentIssuesCount: Int {
-        switch selectedMainTab {
+        switch effectiveMainTab {
         case .notifications:
             notificationService.notifications.count { $0.notificationType == .issue }
         case .activity:
@@ -170,7 +184,7 @@ struct MenuBarView: View {
     }
 
     private var currentPrsCount: Int {
-        switch selectedMainTab {
+        switch effectiveMainTab {
         case .notifications:
             notificationService.notifications.count { $0.notificationType == .pullRequest }
         case .activity:
@@ -222,7 +236,7 @@ struct MenuBarView: View {
 
     @MainActor
     private func refreshCurrentTab() async {
-        switch selectedMainTab {
+        switch effectiveMainTab {
         case .notifications:
             await notificationService.fetchNotifications()
         case .activity:
@@ -236,6 +250,12 @@ struct MenuBarView: View {
             }
         case .search:
             await searchService.fetchAll()
+        }
+    }
+
+    private func normalizeSelectedMainTabIfNeeded() {
+        if !visibleMainTabs.contains(selectedMainTab) {
+            selectedMainTab = visibleMainTabs.first ?? .notifications
         }
     }
 
