@@ -33,6 +33,14 @@
 
 "settings.startup.launch" = "登录时启动";
 
+/* Menu Bar Tab Visibility */
+"settings.menubar.tabs.section" = "菜单栏标签页";
+"settings.menubar.tabs.notifications" = "显示“通知”标签页";
+"settings.menubar.tabs.activity" = "显示“动态”标签页";
+"settings.menubar.tabs.search" = "显示“搜索”标签页";
+"settings.menubar.tabs.description" = "选择菜单栏窗口中显示的标签页。修改后需重启应用生效。";
+"settings.menubar.tabs.minimum_one" = "至少保留一个标签页开启。";
+
 /* Notification Settings */
 "settings.notifications.section" = "系统通知";
 "settings.notifications.enable" = "启用系统通知";

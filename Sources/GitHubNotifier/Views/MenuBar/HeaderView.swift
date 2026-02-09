@@ -6,53 +6,26 @@ struct HeaderView: View {
     @Namespace private var tabAnimation
 
     @Binding var selectedTab: MenuBarMainTab
+    let visibleTabs: [MenuBarMainTab]
     let unreadCount: Int
     let currentUserLogin: String?
 
     let onOpenSettings: () -> Void
     let onQuit: () -> Void
 
-    init(
-        selectedTab: Binding<MenuBarMainTab>,
-        unreadCount: Int,
-        currentUserLogin: String?,
-        onOpenSettings: @escaping () -> Void,
-        onQuit: @escaping () -> Void
-    ) {
-        self._selectedTab = selectedTab
-        self.unreadCount = unreadCount
-        self.currentUserLogin = currentUserLogin
-        self.onOpenSettings = onOpenSettings
-        self.onQuit = onQuit
-    }
-
     var body: some View {
         HStack {
             HStack(spacing: 4) {
-                TabButton(
-                    title: "menubar.tab.notifications".localized,
-                    icon: "bell",
-                    isSelected: selectedTab == .notifications,
-                    showDot: unreadCount > 0,
-                    namespace: tabAnimation,
-                    action: { switchTab(to: .notifications) }
-                )
-
-                TabButton(
-                    title: "menubar.tab.activity".localized,
-                    icon: "list.bullet.rectangle",
-                    isSelected: selectedTab == .activity,
-                    namespace: tabAnimation,
-                    action: { switchTab(to: .activity) }
-                )
-
-                TabButton(
-                    title: "menubar.tab.search".localized,
-                    icon: "magnifyingglass",
-                    isSelected: selectedTab == .search,
-                    namespace: tabAnimation,
-                    action: { switchTab(to: .search) }
-                )
+                ForEach(visibleTabs, id: \.self) { tab in
+                    TabButton(
+                        title: tab.titleKey.localized,
+                        icon: tab.iconName,
+                        isSelected: selectedTab == tab,
+                        showDot: tab == .notifications && unreadCount > 0,
+                        namespace: tabAnimation,
+                        action: { switchTab(to: tab) }
+                    )
+                }
             }
 
             Spacer()

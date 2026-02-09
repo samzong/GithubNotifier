@@ -11,6 +11,9 @@ public struct UserPreferences {
     public static let refreshIntervalKey = "refreshInterval"
     public static let showNotificationCountKey = "showNotificationCount"
     public static let launchAtLoginKey = "launchAtLogin"
+    public static let menubarShowNotificationsTabKey = "menubar.showNotificationsTab"
+    public static let menubarShowActivityTabKey = "menubar.showActivityTab"
+    public static let menubarShowSearchTabKey = "menubar.showSearchTab"
 
     public init() {}
 }

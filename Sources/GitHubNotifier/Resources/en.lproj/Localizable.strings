@@ -33,6 +33,14 @@
 
 "settings.startup.launch" = "Launch at login";
 
+/* Menu Bar Tab Visibility */
+"settings.menubar.tabs.section" = "Menu Bar Tabs";
+"settings.menubar.tabs.notifications" = "Show Notifications tab";
+"settings.menubar.tabs.activity" = "Show Activities tab";
+"settings.menubar.tabs.search" = "Show Search tab";
+"settings.menubar.tabs.description" = "Choose which tabs appear in the menu bar window. Changes apply after restarting the app.";
+"settings.menubar.tabs.minimum_one" = "At least one tab must remain enabled.";
+
 /* Notification Settings */
 "settings.notifications.section" = "System Notifications";
 "settings.notifications.enable" = "Enable system notifications";

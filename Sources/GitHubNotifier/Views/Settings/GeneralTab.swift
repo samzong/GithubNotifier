@@ -7,6 +7,9 @@ struct GeneralTab: View {
 
     @AppStorage(UserPreferences.refreshIntervalKey) private var refreshInterval: Double = 60
     @AppStorage(UserPreferences.launchAtLoginKey) private var launchAtLogin = false
+    @AppStorage(UserPreferences.menubarShowNotificationsTabKey) private var showNotificationsTab = true
+    @AppStorage(UserPreferences.menubarShowActivityTabKey) private var showActivityTab = true
+    @AppStorage(UserPreferences.menubarShowSearchTabKey) private var showSearchTab = true
     @AppStorage("enableSystemNotifications") private var enableSystemNotifications = false
 
     @State private var isTestingNotification = false
@@ -19,6 +22,10 @@ struct GeneralTab: View {
         (300, "settings.refresh.5min".localized),
         (600, "settings.refresh.10min".localized),
     ]
+
+    private var enabledMainTabCount: Int {
+        [showNotificationsTab, showActivityTab, showSearchTab].count(where: { $0 })
+    }
 
     var body: some View {
         Form {
@@ -68,9 +75,33 @@ struct GeneralTab: View {
             } header: {
                 Text("settings.notifications.section".localized)
             }
+
+            Section {
+                Toggle("settings.menubar.tabs.notifications".localized, isOn: $showNotificationsTab)
+                    .disabled(showNotificationsTab && enabledMainTabCount == 1)
+
+                Toggle("settings.menubar.tabs.activity".localized, isOn: $showActivityTab)
+                    .disabled(showActivityTab && enabledMainTabCount == 1)
+
+                Toggle("settings.menubar.tabs.search".localized, isOn: $showSearchTab)
+                    .disabled(showSearchTab && enabledMainTabCount == 1)
+
+                Text("settings.menubar.tabs.description".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("settings.menubar.tabs.minimum_one".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("settings.menubar.tabs.section".localized)
+            }
         }
         .formStyle(.grouped)
         .frame(width: settingsWidth)
+        .onAppear {
+            normalizeMainTabVisibilityIfNeeded()
+        }
     }
 
     private func setLaunchAtLogin(_ enabled: Bool) {
@@ -104,6 +135,12 @@ struct GeneralTab: View {
             await MainActor.run {
                 isTestingNotification = false
             }
+        }
+    }
+
+    private func normalizeMainTabVisibilityIfNeeded() {
+        if !showNotificationsTab, !showActivityTab, !showSearchTab {
+            showNotificationsTab = true
         }
     }
 }
