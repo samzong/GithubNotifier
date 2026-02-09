@@ -2,8 +2,6 @@
 //  SearchListView.swift
 //  GitHubNotifier
 //
-//  Content view for the Search tab in the MenuBar.
-//  Displays aggregated results from all enabled saved searches.
 //
 
 import GitHubNotifierCore
@@ -14,7 +12,6 @@ struct SearchListView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
 
-    // Selected search filter passed from parent (nil = All)
     @Binding var selectedSearchId: UUID?
 
     let onItemTapped: (SearchResultItem) -> Void
@@ -29,14 +26,22 @@ struct SearchListView: View {
         Group {
             if searchService.savedSearches.isEmpty {
                 emptyStateNoSearches
-            } else if displayedItems.isEmpty {
-                if searchService.isLoading {
-                    loadingView
-                } else {
+            } else if searchService.isLoading, displayedItems.isEmpty, displayedRepositories.isEmpty {
+                loadingView
+            } else if selectedSearchId == nil {
+                if displayedItems.isEmpty, displayedRepositories.isEmpty {
                     emptyStateNoResults
+                } else {
+                    combinedResultsList
                 }
+            } else if isRepositorySearch {
+                repositoryContent
             } else {
-                resultsList
+                if displayedItems.isEmpty {
+                    emptyStateNoResults
+                } else {
+                    resultsList
+                }
             }
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: displayedItems.count)
@@ -44,17 +49,60 @@ struct SearchListView: View {
 
     // MARK: - Computed Properties
 
+    private var isRepositorySearch: Bool {
+        guard let selectedSearchId else { return false }
+        return searchService.savedSearches.first { $0.id == selectedSearchId }?.type == .repository
+    }
+
     private var displayedItems: [SearchResultItem] {
         if let selectedSearchId {
-            // Filter by specific search
             searchService.resultsBySearchId[selectedSearchId] ?? []
         } else {
-            // Show all aggregated items
             searchService.items
         }
     }
 
-    // MARK: - Results List
+    private var displayedRepositories: [RepositorySearchItem] {
+        if let selectedSearchId {
+            searchService.repositoryResultsBySearchId[selectedSearchId] ?? []
+        } else {
+            searchService.repositoryItems
+        }
+    }
+
+    // MARK: - Combined Results List (All mode)
+
+    @ViewBuilder private var combinedResultsList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(displayedItems) { item in
+                    SearchRowView(item: item)
+                        .contentShape(Rectangle())
+                        .onTapGesture { onItemTapped(item) }
+
+                    if item.id != displayedItems.last?.id || !displayedRepositories.isEmpty {
+                        Divider()
+                            .padding(.leading, 44)
+                    }
+                }
+
+                ForEach(displayedRepositories) { repo in
+                    RepositoryRowView(repository: repo) {
+                        if let url = repo.webURL {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+
+                    if repo.id != displayedRepositories.last?.id {
+                        Divider()
+                            .padding(.leading, 44)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Results List (Issue/PR only)
 
     @ViewBuilder private var resultsList: some View {
         ScrollView {
@@ -65,6 +113,39 @@ struct SearchListView: View {
                         .onTapGesture { onItemTapped(item) }
 
                     if item.id != displayedItems.last?.id {
+                        Divider()
+                            .padding(.leading, 44)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Repository Content
+
+    @ViewBuilder private var repositoryContent: some View {
+        if displayedRepositories.isEmpty {
+            if searchService.isLoading {
+                loadingView
+            } else {
+                emptyStateNoResults
+            }
+        } else {
+            repositoryList
+        }
+    }
+
+    @ViewBuilder private var repositoryList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(displayedRepositories) { repo in
+                    RepositoryRowView(repository: repo) {
+                        if let url = repo.webURL {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+
+                    if repo.id != displayedRepositories.last?.id {
                         Divider()
                             .padding(.leading, 44)
                     }

@@ -349,10 +349,6 @@ public struct Viewer: Codable, Sendable {
     public let email: String?
 }
 
-private struct ViewerData: Decodable {
-    let viewer: Viewer
-}
-
 public struct NotificationDetails: Sendable {
     public let title: String
     public let state: String
@@ -805,4 +801,88 @@ private struct AnyCodable: Encodable {
             )
         }
     }
+}
+
+// MARK: - Repository Search API
+
+extension GitHubGraphQLClient {
+    /// Query examples:
+    ///   - "user:kubernetes created:>2026-01-01"
+    ///   - "org:google language:go"
+    public func searchRepositories(query: String, first: Int = 30) async throws -> [RepositorySearchItem] {
+        let graphqlQuery = """
+        query($query: String!, $first: Int!) {
+          search(query: $query, type: REPOSITORY, first: $first) {
+            nodes {
+              ... on Repository {
+                id
+                name
+                owner { login }
+                description
+                stargazerCount
+                primaryLanguage { name }
+                createdAt
+                updatedAt
+                isPrivate
+                isFork
+              }
+            }
+          }
+        }
+        """
+
+        let variables: [String: Any] = ["query": query, "first": first]
+        let result: RepoSearchData = try await execute(query: graphqlQuery, variables: variables)
+        return result.search.nodes.compactMap { node -> RepositorySearchItem? in
+            guard let id = node.id,
+                  let name = node.name,
+                  let owner = node.owner?.login,
+                  let createdAt = node.createdAt,
+                  let updatedAt = node.updatedAt else { return nil }
+
+            return RepositorySearchItem(
+                id: id,
+                name: name,
+                owner: owner,
+                description: node.description,
+                stargazerCount: node.stargazerCount ?? 0,
+                language: node.primaryLanguage?.name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isPrivate: node.isPrivate ?? false,
+                isFork: node.isFork ?? false
+            )
+        }
+    }
+}
+
+// MARK: - Repository Search Response Models
+
+private struct RepoSearchData: Decodable {
+    let search: RepoSearchConnection
+}
+
+private struct RepoSearchConnection: Decodable {
+    let nodes: [RepoSearchNode]
+}
+
+private struct RepoSearchNode: Decodable {
+    let id: String?
+    let name: String?
+    let owner: RepoOwner?
+    let description: String?
+    let stargazerCount: Int?
+    let primaryLanguage: PrimaryLanguage?
+    let createdAt: Date?
+    let updatedAt: Date?
+    let isPrivate: Bool?
+    let isFork: Bool?
+}
+
+private struct RepoOwner: Decodable {
+    let login: String
+}
+
+private struct PrimaryLanguage: Decodable {
+    let name: String
 }
