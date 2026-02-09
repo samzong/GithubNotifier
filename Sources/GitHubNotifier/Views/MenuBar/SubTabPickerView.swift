@@ -12,12 +12,10 @@ struct SubTabPickerView: View {
     let isMarkingAsRead: Bool
     let isLoading: Bool
 
-    // Search tab: pinned searches and selection
     let pinnedSearches: [SavedSearch]
     @Binding var selectedSearchId: UUID?
 
     let onMarkAsRead: () async -> Void
-    let onOpenRules: () -> Void
     let onRefresh: () async -> Void
     let onManage: (() -> Void)?
 
@@ -37,8 +35,6 @@ struct SubTabPickerView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }
-
-    // MARK: - Notifications / Activity Segmented Control
 
     private var notificationActivitySegmentedControl: some View {
         HStack(spacing: 2) {
@@ -82,12 +78,9 @@ struct SubTabPickerView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Search Segmented Control (Pinned Searches)
-
     private var searchSegmentedControl: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 2) {
-                // "All" button
                 searchSegmentButton(
                     title: "menubar.filter.all".localized,
                     icon: "magnifyingglass",
@@ -95,7 +88,6 @@ struct SubTabPickerView: View {
                     action: { selectedSearchId = nil }
                 )
 
-                // Pinned searches
                 ForEach(pinnedSearches) { search in
                     searchSegmentButton(
                         title: search.name,
@@ -134,22 +126,16 @@ struct SubTabPickerView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Action Buttons
-
     @ViewBuilder private var actionButtons: some View {
         switch mainTab {
         case .notifications:
-            // Notifications: Mark as Read, Rules, Refresh
             markAsReadButton
-            rulesButton
             refreshButton
 
         case .activity:
-            // Activities: Refresh only
             refreshButton
 
         case .search:
-            // Search: Manage, Refresh
             if let onManage {
                 manageButton(action: onManage)
             }
@@ -173,18 +159,6 @@ struct SubTabPickerView: View {
         .buttonStyle(.plain)
         .help("menubar.mark_all_read".localized)
         .disabled(isMarkingAsRead)
-    }
-
-    private var rulesButton: some View {
-        Button {
-            onOpenRules()
-        } label: {
-            Image(systemName: "slider.horizontal.3")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.purple)
-        }
-        .buttonStyle(.plain)
-        .help("settings.tab.rules".localized)
     }
 
     private var refreshButton: some View {
