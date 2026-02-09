@@ -83,7 +83,6 @@ struct MenuBarView: View {
                         set: { selectedSearchFilterId = $0 }
                     ),
                     onMarkAsRead: markFilteredAsRead,
-                    onOpenRules: { openSettingsAndBringToFront(tab: .rules) },
                     onRefresh: refreshCurrentTab,
                     onManage: effectiveMainTab == .search ? {
                         openAuxiliaryWindowAndBringToFront(window: .searchManagement)
