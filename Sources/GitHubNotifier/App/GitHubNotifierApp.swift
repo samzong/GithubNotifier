@@ -28,7 +28,8 @@ struct GitHubNotifierApp: App {
             userDriverDelegate: nil
         )
 
-        let token = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey)
+        let oauthToken = KeychainHelper.shared.get(forKey: "github_oauth_access_token")
+        let token = oauthToken
         let service = NotificationService(token: token)
         _notificationService = State(initialValue: service)
 
@@ -63,6 +64,10 @@ struct GitHubNotifierApp: App {
             Task { @MainActor in
                 await service.fetchCurrentUser()
             }
+        }
+
+        Task {
+            await AuthStore.shared.cleanLegacyKeys()
         }
     }
 

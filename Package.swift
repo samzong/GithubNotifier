@@ -15,6 +15,9 @@ let package = Package(
             name: "GitHubNotifierCore",
             dependencies: [],
             path: "Sources/GitHubNotifierCore",
+            resources: [
+                .process("Resources/oauth_config.json"),
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]
