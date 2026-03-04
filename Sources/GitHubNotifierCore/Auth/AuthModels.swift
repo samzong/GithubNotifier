@@ -46,15 +46,6 @@ public enum DeviceFlowError: Error, Sendable {
     case networkError(underlying: Error)
     case unexpectedResponse(String)
 
-    public var isRetryable: Bool {
-        switch self {
-        case .authorizationPending, .slowDown:
-            true
-        default:
-            false
-        }
-    }
-
     public var localizedDescription: String {
         switch self {
         case .authorizationPending:
@@ -69,9 +60,9 @@ public enum DeviceFlowError: Error, Sendable {
             "Device Flow is not enabled for this OAuth App."
         case .invalidClientId:
             "Invalid OAuth client configuration."
-        case .networkError(let underlying):
+        case let .networkError(underlying):
             "Network error: \(underlying.localizedDescription)"
-        case .unexpectedResponse(let msg):
+        case let .unexpectedResponse(msg):
             "Unexpected response: \(msg)"
         }
     }

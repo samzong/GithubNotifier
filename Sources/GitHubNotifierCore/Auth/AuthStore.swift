@@ -2,7 +2,6 @@ import Foundation
 import Security
 
 public actor AuthStore {
-
     public static let shared = AuthStore()
 
     public static let oauthKey = "github_oauth_access_token"

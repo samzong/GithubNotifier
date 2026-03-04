@@ -1,9 +1,5 @@
 import Foundation
 
-public extension Notification.Name {
-    static let githubTokenUnauthorized = Notification.Name("githubTokenUnauthorized")
-}
-
 @Observable
 @MainActor
 public class NotificationService {
@@ -232,27 +228,13 @@ public class NotificationService {
         for notification in group.notifications {
             do {
                 try await restClient.markNotificationAsRead(threadId: notification.id)
-        } catch APIError.unauthorized {
-            errorMessage = APIError.unauthorized.localizedDescription
-            NotificationCenter.default.post(name: .githubTokenUnauthorized, object: nil)
-        } catch {
+            } catch {
                 // Continue marking others even if one fails
             }
         }
 
         let groupIds = Set(group.notifications.map(\.id))
         notifications.removeAll { groupIds.contains($0.id) }
-    }
-
-    public func markAllAsRead() async {
-        guard let restClient else { return }
-
-        do {
-            try await restClient.markAllNotificationsAsRead()
-            notifications.removeAll()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
     }
 
     public func startAutoRefresh(interval: TimeInterval) {

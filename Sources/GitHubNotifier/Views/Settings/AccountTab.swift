@@ -13,12 +13,16 @@ private enum DeviceFlowState: Equatable {
 
     static func == (lhs: DeviceFlowState, rhs: DeviceFlowState) -> Bool {
         switch (lhs, rhs) {
-        case (.idle, .idle), (.requestingCode, .requestingCode): true
-        case (.showingCode(let l, let ls), .showingCode(let r, let rs)):
-            l.userCode == r.userCode && ls == rs
-        case (.success(let l), .success(let r)): l == r
-        case (.error(let l), .error(let r)): l == r
-        default: false
+        case (.idle, .idle), (.requestingCode, .requestingCode):
+            true
+        case let (.showingCode(lhsCode, lhsSeconds), .showingCode(rhsCode, rhsSeconds)):
+            lhsCode.userCode == rhsCode.userCode && lhsSeconds == rhsSeconds
+        case let (.success(lhsUser), .success(rhsUser)):
+            lhsUser == rhsUser
+        case let (.error(lhsMsg), .error(rhsMsg)):
+            lhsMsg == rhsMsg
+        default:
+            false
         }
     }
 }
@@ -71,11 +75,11 @@ struct AccountTab: View {
             webAuthIdleView
         case .requestingCode:
             webAuthRequestingView
-        case .showingCode(let response, let seconds):
+        case let .showingCode(response, seconds):
             webAuthCodeView(response: response, secondsRemaining: seconds)
-        case .success(let username):
+        case let .success(username):
             webAuthSuccessView(username: username)
-        case .error(let message):
+        case let .error(message):
             webAuthErrorView(message: message)
         }
     }
@@ -241,7 +245,7 @@ struct AccountTab: View {
                 let clock = ContinuousClock()
                 let deadline = clock.now + .seconds(codeResponse.expiresIn)
 
-                while !Task.isCancelled && clock.now < deadline {
+                while !Task.isCancelled, clock.now < deadline {
                     try await Task.sleep(for: .seconds(interval))
                     guard !Task.isCancelled else { break }
 
@@ -251,7 +255,7 @@ struct AccountTab: View {
                     )
 
                     switch result {
-                    case .token(let tokenResponse):
+                    case let .token(tokenResponse):
                         await AuthStore.shared.saveToken(tokenResponse.accessToken)
                         notificationService.configure(token: tokenResponse.accessToken)
                         activityService.configure(token: tokenResponse.accessToken)
@@ -262,9 +266,9 @@ struct AccountTab: View {
                         return
                     case .pending:
                         break
-                    case .slowDown(let newInterval):
+                    case let .slowDown(newInterval):
                         interval = newInterval
-                    case .failed(let err):
+                    case let .failed(err):
                         countdownTask?.cancel()
                         deviceFlowState = .error(err.localizedDescription)
                         return
@@ -287,10 +291,10 @@ struct AccountTab: View {
         countdownTask?.cancel()
         countdownTask = Task { @MainActor in
             var remaining = expiresIn
-            while remaining > 0 && !Task.isCancelled {
+            while remaining > 0, !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 remaining -= 1
-                if case .showingCode(let resp, _) = deviceFlowState {
+                if case let .showingCode(resp, _) = deviceFlowState {
                     deviceFlowState = .showingCode(resp, secondsRemaining: remaining)
                 }
             }
@@ -322,9 +326,9 @@ struct AccountTab: View {
     }
 
     private func formatSeconds(_ seconds: Int) -> String {
-        let m = seconds / 60
-        let s = seconds % 60
-        return String(format: "%d:%02d", m, s)
+        let minutes = seconds / 60
+        let secs = seconds % 60
+        return String(format: "%d:%02d", minutes, secs)
     }
 }
 

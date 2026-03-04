@@ -31,7 +31,6 @@ struct WelcomeView: View {
             // Setup Section
             VStack(spacing: 16) {
                 HStack(spacing: 8) {
-
                     Text("welcome.setup.hint".localized)
                         .font(.callout)
                         .foregroundStyle(.secondary)

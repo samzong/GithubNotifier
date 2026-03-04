@@ -61,14 +61,6 @@ public final class GitHubAPI: Sendable {
         _ = try await makeRequest(endpoint: endpoint, method: "PATCH")
     }
 
-    /// Marks all notifications as read for the authenticated user.
-    ///
-    /// - Throws: `APIError` if the request fails
-    public func markAllNotificationsAsRead() async throws {
-        let endpoint = "\(baseURL)/notifications"
-        _ = try await makeRequest(endpoint: endpoint, method: "PUT")
-    }
-
     // MARK: - Private
 
     private func makeRequest(endpoint: String, method: String = "GET", body: Data? = nil) async throws -> Data {

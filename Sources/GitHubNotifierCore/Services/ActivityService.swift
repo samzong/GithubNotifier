@@ -148,7 +148,4 @@ public class ActivityService {
 
     public var pullRequests: [SearchResultItem] { pullRequests(for: .all) }
     public var issues: [SearchResultItem] { issues(for: .all) }
-    public var itemCount: Int { items.count }
-    public var pullRequestCount: Int { pullRequests.count }
-    public var issueCount: Int { issues.count }
 }

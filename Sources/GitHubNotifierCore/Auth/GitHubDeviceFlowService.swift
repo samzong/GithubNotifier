@@ -1,7 +1,6 @@
 import Foundation
 
 public struct GitHubDeviceFlowService: Sendable {
-
     private static let deviceCodeURL = URL(string: "https://github.com/login/device/code")!
     private static let accessTokenURL = URL(string: "https://github.com/login/oauth/access_token")!
     private static let oauthScopes = "notifications read:user"

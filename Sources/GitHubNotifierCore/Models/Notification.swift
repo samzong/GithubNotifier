@@ -57,10 +57,6 @@ extension GitHubNotification {
         subject.title
     }
 
-    public var displaySubtitle: String {
-        "\(repository.fullName) · \(reason.capitalized)"
-    }
-
     public var issueOrPRNumber: Int? {
         guard let urlString = subject.url else { return nil }
         let components = urlString.split(separator: "/")

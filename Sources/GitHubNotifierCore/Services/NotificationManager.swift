@@ -114,14 +114,6 @@ public class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         try? await notificationCenter.add(request)
     }
 
-    public func clearAllNotifications() {
-        notificationCenter.removeAllDeliveredNotifications()
-    }
-
-    public func clearNotification(withId id: String) {
-        notificationCenter.removeDeliveredNotifications(withIdentifiers: [id])
-    }
-
     public func sendTestNotification() async {
         let status = await checkAuthorizationStatus()
         guard status == .authorized else {

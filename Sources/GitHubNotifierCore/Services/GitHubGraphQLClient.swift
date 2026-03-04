@@ -190,128 +190,6 @@ public actor GitHubGraphQLClient {
             return issue.toDetails()
         }
     }
-
-    // MARK: - PR/Issue List Queries
-
-    /// Fetch user's pull requests
-    public func fetchMyPullRequests(first: Int = 20) async throws -> [PullRequestItem] {
-        let query = """
-        query($first: Int!) {
-          viewer {
-            pullRequests(first: $first, orderBy: {field: UPDATED_AT, direction: DESC}) {
-              nodes {
-                repository { nameWithOwner }
-                number
-                title
-                state
-                createdAt
-                updatedAt
-                author { login }
-              }
-            }
-          }
-        }
-        """
-
-        let result: MyPullRequestsData = try await execute(query: query, variables: ["first": first])
-        return result.viewer.pullRequests.nodes
-    }
-
-    /// Fetch user's issues
-    public func fetchMyIssues(first: Int = 20) async throws -> [IssueItem] {
-        let query = """
-        query($first: Int!) {
-          viewer {
-            issues(first: $first, orderBy: {field: UPDATED_AT, direction: DESC}) {
-              nodes {
-                repository { nameWithOwner }
-                number
-                title
-                state
-                createdAt
-                updatedAt
-                author { login }
-              }
-            }
-          }
-        }
-        """
-
-        let result: MyIssuesData = try await execute(query: query, variables: ["first": first])
-        return result.viewer.issues.nodes
-    }
-
-    /// Fetch repository's pull requests
-    public func fetchRepositoryPullRequests(
-        owner: String,
-        repo: String,
-        states: [String] = ["OPEN"],
-        first: Int = 20
-    ) async throws -> [PullRequestItem] {
-        let query = """
-        query($owner: String!, $repo: String!, $states: [PullRequestState!], $first: Int!) {
-          repository(owner: $owner, name: $repo) {
-            pullRequests(states: $states, first: $first, orderBy: {field: UPDATED_AT, direction: DESC}) {
-              nodes {
-                repository { nameWithOwner }
-                number
-                title
-                state
-                createdAt
-                updatedAt
-                author { login }
-              }
-            }
-          }
-        }
-        """
-
-        let variables: [String: Any] = [
-            "owner": owner,
-            "repo": repo,
-            "states": states,
-            "first": first,
-        ]
-
-        let result: RepoPullRequestsData = try await execute(query: query, variables: variables)
-        return result.repository.pullRequests.nodes
-    }
-
-    /// Fetch repository's issues
-    public func fetchRepositoryIssues(
-        owner: String,
-        repo: String,
-        states: [String] = ["OPEN"],
-        first: Int = 20
-    ) async throws -> [IssueItem] {
-        let query = """
-        query($owner: String!, $repo: String!, $states: [IssueState!], $first: Int!) {
-          repository(owner: $owner, name: $repo) {
-            issues(states: $states, first: $first, orderBy: {field: UPDATED_AT, direction: DESC}) {
-              nodes {
-                repository { nameWithOwner }
-                number
-                title
-                state
-                createdAt
-                updatedAt
-                author { login }
-              }
-            }
-          }
-        }
-        """
-
-        let variables: [String: Any] = [
-            "owner": owner,
-            "repo": repo,
-            "states": states,
-            "first": first,
-        ]
-
-        let result: RepoIssuesData = try await execute(query: query, variables: variables)
-        return result.repository.issues.nodes
-    }
 }
 
 // MARK: - Request/Response Types
@@ -341,13 +219,6 @@ private struct GraphQLErrorDetail: Decodable {
 }
 
 // MARK: - Response Models
-
-public struct Viewer: Codable, Sendable {
-    public let login: String
-    public let name: String?
-    public let avatarUrl: String
-    public let email: String?
-}
 
 public struct NotificationDetails: Sendable {
     public let title: String
@@ -384,30 +255,6 @@ public struct CheckResult: Sendable, Hashable {
 public struct Review: Codable, Sendable {
     public let author: Author?
     public let state: String // APPROVED, CHANGES_REQUESTED
-}
-
-public struct PullRequestItem: Codable, Sendable {
-    public let repository: Repository
-    public let number: Int
-    public let title: String
-    public let state: String
-    public let createdAt: Date
-    public let updatedAt: Date
-    public let author: Author?
-}
-
-public struct IssueItem: Codable, Sendable {
-    public let repository: Repository
-    public let number: Int
-    public let title: String
-    public let state: String
-    public let createdAt: Date
-    public let updatedAt: Date
-    public let author: Author?
-}
-
-public struct Repository: Codable, Sendable {
-    public let nameWithOwner: String
 }
 
 public enum NotificationSubjectType: Sendable {
@@ -548,46 +395,6 @@ private struct StatusContext: Decodable {
 
 private struct ReviewConnection: Decodable {
     let nodes: [Review]
-}
-
-private struct MyPullRequestsData: Decodable {
-    let viewer: ViewerPullRequests
-}
-
-private struct ViewerPullRequests: Decodable {
-    let pullRequests: PullRequestConnection
-}
-
-private struct PullRequestConnection: Decodable {
-    let nodes: [PullRequestItem]
-}
-
-private struct MyIssuesData: Decodable {
-    let viewer: ViewerIssues
-}
-
-private struct ViewerIssues: Decodable {
-    let issues: IssueConnection
-}
-
-private struct IssueConnection: Decodable {
-    let nodes: [IssueItem]
-}
-
-private struct RepoPullRequestsData: Decodable {
-    let repository: RepoPullRequests
-}
-
-private struct RepoPullRequests: Decodable {
-    let pullRequests: PullRequestConnection
-}
-
-private struct RepoIssuesData: Decodable {
-    let repository: RepoIssues
-}
-
-private struct RepoIssues: Decodable {
-    let issues: IssueConnection
 }
 
 // MARK: - Search API (I1 Infrastructure)

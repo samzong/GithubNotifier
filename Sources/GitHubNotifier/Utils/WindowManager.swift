@@ -28,9 +28,4 @@ public final class WindowManager: ObservableObject {
             NSWorkspace.shared.open(url)
         }
     }
-
-    /// Closes the auxiliary window if open.
-    public func close() {
-        activeWindow = nil
-    }
 }

@@ -5,20 +5,8 @@ struct AboutTab: View {
     let updater: SPUUpdater
     let settingsWidth: CGFloat
 
-    @State private var latestVersion: String?
-    @State private var latestReleaseURL: String?
-    @State private var isCheckingUpdate = false
-    @State private var updateCheckResult: UpdateCheckResult = .none
-
     private let repoOwner = "samzong"
     private let repoName = "GitHubNotifier"
-
-    private enum UpdateCheckResult {
-        case none
-        case upToDate
-        case newVersionAvailable
-        case error(String)
-    }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -100,46 +88,6 @@ struct AboutTab: View {
                 Spacer()
 
                 CheckForUpdatesView(updater: updater)
-            }
-
-            switch updateCheckResult {
-            case .upToDate:
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    Text("about.up.to.date".localized)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .font(.callout)
-            case .newVersionAvailable:
-                if let latestVersion {
-                    HStack {
-                        Image(systemName: "sparkles")
-                            .foregroundStyle(.yellow)
-                        Text("about.new.version".localized)
-                        Text("v\(latestVersion)")
-                            .fontWeight(.medium)
-                        Spacer()
-                        if let url = latestReleaseURL, let releaseURL = URL(string: url) {
-                            Link("about.download".localized, destination: releaseURL)
-                                .foregroundStyle(.blue)
-                        }
-                    }
-                    .font(.callout)
-                    .foregroundStyle(.blue)
-                }
-            case let .error(message):
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    Text(message)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .font(.callout)
-            case .none:
-                EmptyView()
             }
         }
         .padding(.horizontal, 40)
