@@ -1,50 +1,24 @@
+import AppKit
 import GitHubNotifierCore
 import SwiftUI
 
-enum AuthMethod: String, CaseIterable {
-    case classic
-    case finegrained
-    case webAuth
+// MARK: - Device Flow UI State
 
-    var displayName: String {
-        switch self {
-        case .classic:
-            "Classic Token"
-        case .finegrained:
-            "Fine-grained"
-        case .webAuth:
-            "Web Auth"
-        }
-    }
+private enum DeviceFlowState: Equatable {
+    case idle
+    case requestingCode
+    case showingCode(DeviceCodeResponse, secondsRemaining: Int)
+    case success(username: String)
+    case error(String)
 
-    var generateURL: URL? {
-        switch self {
-        case .classic:
-            URL(string: "https://github.com/settings/tokens/new?scopes=notifications,read:user,repo&description=GitHubNotifier")
-        case .finegrained:
-            URL(string: "https://github.com/settings/personal-access-tokens/new")
-        case .webAuth:
-            nil
-        }
-    }
-
-    var generateButtonText: String {
-        switch self {
-        case .classic:
-            "account.generate.classic".localized
-        case .finegrained:
-            "account.generate.finegrained".localized
-        case .webAuth:
-            ""
-        }
-    }
-
-    var isAvailable: Bool {
-        switch self {
-        case .classic, .finegrained:
-            true
-        case .webAuth:
-            false
+    static func == (lhs: DeviceFlowState, rhs: DeviceFlowState) -> Bool {
+        switch (lhs, rhs) {
+        case (.idle, .idle), (.requestingCode, .requestingCode): true
+        case (.showingCode(let l, let ls), .showingCode(let r, let rs)):
+            l.userCode == r.userCode && ls == rs
+        case (.success(let l), .success(let r)): l == r
+        case (.error(let l), .error(let r)): l == r
+        default: false
         }
     }
 }
@@ -53,252 +27,304 @@ struct AccountTab: View {
     @Environment(NotificationService.self) private var notificationService
     @Environment(ActivityService.self) private var activityService
 
-    @State private var token = ""
-    @State private var hasLoadedToken = false
-    @State private var selectedAuthMethod: AuthMethod = .classic
-    @State private var showClearConfirmation = false
-    @FocusState private var isTokenFocused: Bool
+    @State private var deviceFlowState: DeviceFlowState = .idle
+    @State private var pollingTask: Task<Void, Never>?
+    @State private var countdownTask: Task<Void, Never>?
+
+    private let deviceFlowService = GitHubDeviceFlowService()
 
     let settingsWidth: CGFloat
 
     var body: some View {
         Form {
-            // Section 1: Connection Status
             Section {
-                connectionStatusView
-            } header: {
-                Text("account.status.header".localized)
-            }
-
-            // Section 2: Authentication Method (Unified)
-            Section {
-                authMethodView
+                webAuthView
             } header: {
                 Text("account.auth.header".localized)
-            }
-
-            // Section 3: Token Input
-            Section {
-                tokenInputView
-            } header: {
-                Text("settings.token.title".localized)
             }
         }
         .formStyle(.grouped)
         .frame(width: settingsWidth)
         .onAppear {
-            if let savedToken = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey) {
-                token = savedToken
-            }
-            hasLoadedToken = true
-        }
-    }
-
-    // MARK: - Connection Status View
-
-    @ViewBuilder private var connectionStatusView: some View {
-        HStack(spacing: 10) {
-            if let user = notificationService.currentUser {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .font(.title3)
-                Text("account.status.connected".localized)
-                    .foregroundStyle(.secondary)
-                Text("@\(user.login)")
-                    .fontWeight(.medium)
-            } else if token.isEmpty {
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.red)
-                    .font(.title3)
-                Text("account.status.not_configured".localized)
-                    .foregroundStyle(.secondary)
-            } else {
-                Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90")
-                    .foregroundStyle(.orange)
-                    .font(.title3)
-                Text("account.status.verifying".localized)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-        }
-    }
-
-    // MARK: - Auth Method View (Unified with Tabs)
-
-    @ViewBuilder private var authMethodView: some View {
-        // Tab Picker
-        Picker("", selection: $selectedAuthMethod) {
-            ForEach(AuthMethod.allCases, id: \.self) { method in
-                Text(method.displayName).tag(method)
-            }
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-
-        // Content based on selected method
-        if selectedAuthMethod.isAvailable {
-            // Permissions for selected method
-            permissionsForMethod(selectedAuthMethod)
-
-            // Generate Button
-            if let url = selectedAuthMethod.generateURL {
-                HStack {
-                    Spacer()
-                    Link(destination: url) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.up.right.square")
-                            Text(selectedAuthMethod.generateButtonText)
-                        }
+            Task {
+                let hasToken = await AuthStore.shared.currentToken() != nil
+                if hasToken, let user = notificationService.currentUser {
+                    deviceFlowState = .success(username: user.login)
+                } else if hasToken {
+                    await notificationService.fetchCurrentUser()
+                    if let user = notificationService.currentUser {
+                        deviceFlowState = .success(username: user.login)
                     }
-                    .buttonStyle(.bordered)
                 }
-                .padding(.top, 4)
             }
-        } else {
-            // Coming Soon placeholder
-            comingSoonView
+        }
+        .onDisappear {
+            cancelPolling()
         }
     }
 
-    @ViewBuilder private var comingSoonView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "sparkles")
-                .font(.largeTitle)
-                .foregroundStyle(.tertiary)
+    // MARK: - Web Auth View
 
-            Text("account.webauth.coming_soon".localized)
-                .font(.headline)
-                .foregroundStyle(.secondary)
+    @ViewBuilder private var webAuthView: some View {
+        switch deviceFlowState {
+        case .idle:
+            webAuthIdleView
+        case .requestingCode:
+            webAuthRequestingView
+        case .showingCode(let response, let seconds):
+            webAuthCodeView(response: response, secondsRemaining: seconds)
+        case .success(let username):
+            webAuthSuccessView(username: username)
+        case .error(let message):
+            webAuthErrorView(message: message)
+        }
+    }
+
+    @ViewBuilder private var webAuthIdleView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.badge.key.fill")
+                .font(.largeTitle)
+                .foregroundStyle(Color.accentColor)
 
             Text("account.webauth.description".localized)
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+
+            Button("account.webauth.signin".localized) {
+                startDeviceFlow()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(GitHubDeviceFlowService.loadClientId() == nil)
+
+            if GitHubDeviceFlowService.loadClientId() == nil {
+                Text("account.webauth.not_configured".localized)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
     }
 
-    @ViewBuilder
-    private func permissionsForMethod(_ method: AuthMethod) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            switch method {
-            case .classic:
-                PermissionRow(
-                    scope: "notifications",
-                    description: "account.perm.notifications",
-                    level: .required
-                )
-                PermissionRow(
-                    scope: "read:user",
-                    description: "account.perm.read_user",
-                    level: .required
-                )
-                PermissionRow(
-                    scope: "repo",
-                    description: "account.perm.repo",
-                    level: .recommended
-                )
-
-            case .finegrained:
-                PermissionRow(
-                    scope: "Notifications",
-                    description: "account.perm.fg.notifications",
-                    level: .required
-                )
-                PermissionRow(
-                    scope: "Email addresses",
-                    description: "account.perm.fg.email",
-                    level: .required
-                )
-                PermissionRow(
-                    scope: "Contents",
-                    description: "account.perm.fg.repo",
-                    level: .recommended
-                )
-
-            case .webAuth:
-                EmptyView()
-            }
+    @ViewBuilder private var webAuthRequestingView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .scaleEffect(0.8)
+            Text("account.webauth.requesting".localized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
     }
 
-    // MARK: - Token Input View
+    @ViewBuilder private func webAuthCodeView(response: DeviceCodeResponse, secondsRemaining: Int) -> some View {
+        VStack(spacing: 16) {
+            Text("account.webauth.code_prompt".localized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-    @ViewBuilder private var tokenInputView: some View {
-        HStack(spacing: 8) {
-            SecureField("", text: $token, prompt: Text("ghp_xxxx..."))
-                .focused($isTokenFocused)
-                .textFieldStyle(.roundedBorder)
-                .labelsHidden()
-                .onSubmit {
-                    saveTokenAutomatically(token)
+            Text(response.userCode)
+                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                .tracking(4)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+
+            HStack(spacing: 8) {
+                Button("account.webauth.open_browser".localized) {
+                    openVerificationURL(response: response)
                 }
-                .onChange(of: isTokenFocused) { _, focused in
-                    if !focused {
-                        saveTokenAutomatically(token)
+                .buttonStyle(.borderedProminent)
+
+                Button("account.webauth.copy_code".localized) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(response.userCode, forType: .string)
+                }
+                .buttonStyle(.bordered)
+            }
+
+            HStack(spacing: 4) {
+                ProgressView()
+                    .scaleEffect(0.6)
+                Text("account.webauth.waiting".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(String(format: "account.webauth.expires_in".localized, formatSeconds(secondsRemaining)))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+
+            Button("common.cancel".localized) {
+                cancelPolling()
+                deviceFlowState = .idle
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .font(.caption)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+    }
+
+    @ViewBuilder private func webAuthSuccessView(username: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.largeTitle)
+                .foregroundStyle(.green)
+
+            Text("@\(username)")
+                .font(.headline)
+
+            Text("account.webauth.signed_in".localized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                Button("account.webauth.signout".localized) {
+                    signOut()
+                }
+                .buttonStyle(.bordered)
+
+                if let url = URL(string: "https://github.com/settings/apps/authorizations") {
+                    Link("account.webauth.manage_apps".localized, destination: url)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+    }
+
+    @ViewBuilder private func webAuthErrorView(message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.largeTitle)
+                .foregroundStyle(.orange)
+
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("account.webauth.retry".localized) {
+                deviceFlowState = .idle
+            }
+            .buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+    }
+
+    // MARK: - Device Flow Logic
+
+    private func startDeviceFlow() {
+        guard let clientId = GitHubDeviceFlowService.loadClientId() else { return }
+        deviceFlowState = .requestingCode
+
+        pollingTask = Task { @MainActor in
+            do {
+                let codeResponse = try await deviceFlowService.requestDeviceCode(clientId: clientId)
+
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(codeResponse.userCode, forType: .string)
+
+                openVerificationURL(response: codeResponse)
+
+                deviceFlowState = .showingCode(codeResponse, secondsRemaining: codeResponse.expiresIn)
+                startCountdown(expiresIn: codeResponse.expiresIn)
+
+                var interval = codeResponse.interval
+                let clock = ContinuousClock()
+                let deadline = clock.now + .seconds(codeResponse.expiresIn)
+
+                while !Task.isCancelled && clock.now < deadline {
+                    try await Task.sleep(for: .seconds(interval))
+                    guard !Task.isCancelled else { break }
+
+                    let result = try await deviceFlowService.pollForToken(
+                        clientId: clientId,
+                        deviceCode: codeResponse.deviceCode
+                    )
+
+                    switch result {
+                    case .token(let tokenResponse):
+                        await AuthStore.shared.saveToken(tokenResponse.accessToken)
+                        notificationService.configure(token: tokenResponse.accessToken)
+                        activityService.configure(token: tokenResponse.accessToken)
+                        await notificationService.fetchCurrentUser()
+                        let username = notificationService.currentUser?.login ?? ""
+                        countdownTask?.cancel()
+                        deviceFlowState = .success(username: username)
+                        return
+                    case .pending:
+                        break
+                    case .slowDown(let newInterval):
+                        interval = newInterval
+                    case .failed(let err):
+                        countdownTask?.cancel()
+                        deviceFlowState = .error(err.localizedDescription)
+                        return
                     }
                 }
 
-            if !token.isEmpty {
-                Button {
-                    showClearConfirmation = true
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                if !Task.isCancelled {
+                    countdownTask?.cancel()
+                    deviceFlowState = .error(DeviceFlowError.expiredToken.localizedDescription)
                 }
-                .buttonStyle(.plain)
-                .help("account.token.clear".localized)
+            } catch is CancellationError {
+                // User cancelled
+            } catch {
+                deviceFlowState = .error(DeviceFlowError.networkError(underlying: error).localizedDescription)
             }
-        }
-        .confirmationDialog(
-            "account.token.clear.title".localized,
-            isPresented: $showClearConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("account.token.clear.confirm".localized, role: .destructive) {
-                clearToken()
-            }
-            Button("common.cancel".localized, role: .cancel) {}
-        } message: {
-            Text("account.token.clear.message".localized)
         }
     }
 
-    // MARK: - Token Management
-
-    private func saveTokenAutomatically(_ newToken: String) {
-        guard hasLoadedToken else { return }
-
-        let trimmedToken = newToken.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if trimmedToken.isEmpty {
-            clearToken()
-            return
+    private func startCountdown(expiresIn: Int) {
+        countdownTask?.cancel()
+        countdownTask = Task { @MainActor in
+            var remaining = expiresIn
+            while remaining > 0 && !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                remaining -= 1
+                if case .showingCode(let resp, _) = deviceFlowState {
+                    deviceFlowState = .showingCode(resp, secondsRemaining: remaining)
+                }
+            }
         }
+    }
 
-        let currentSaved = KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey)
-        if currentSaved == trimmedToken {
-            return
-        }
+    private func cancelPolling() {
+        pollingTask?.cancel()
+        pollingTask = nil
+        countdownTask?.cancel()
+        countdownTask = nil
+    }
 
-        guard KeychainHelper.shared.save(trimmedToken, forKey: UserPreferences.tokenKeychainKey) else { return }
-
-        notificationService.configure(token: trimmedToken)
-        activityService.configure(token: trimmedToken)
+    private func signOut() {
+        cancelPolling()
         Task {
-            await notificationService.fetchNotifications()
-            await notificationService.fetchCurrentUser()
-            await activityService.fetchMyItems()
+            await AuthStore.shared.clearToken()
         }
-    }
-
-    private func clearToken() {
-        token = ""
-        _ = KeychainHelper.shared.delete(forKey: UserPreferences.tokenKeychainKey)
         notificationService.clearToken()
         activityService.clearToken()
+        deviceFlowState = .idle
+    }
+
+    private func openVerificationURL(response: DeviceCodeResponse) {
+        let urlString = response.verificationUriComplete ?? response.verificationUri
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func formatSeconds(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%d:%02d", m, s)
     }
 }
 

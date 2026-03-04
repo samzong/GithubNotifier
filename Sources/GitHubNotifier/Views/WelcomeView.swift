@@ -31,9 +31,6 @@ struct WelcomeView: View {
             // Setup Section
             VStack(spacing: 16) {
                 HStack(spacing: 8) {
-                    Image(systemName: "key.fill")
-                        .foregroundStyle(.orange)
-                        .font(.title3)
 
                     Text("welcome.setup.hint".localized)
                         .font(.callout)
@@ -41,7 +38,7 @@ struct WelcomeView: View {
                 }
 
                 Button(action: onOpenSettings) {
-                    Label("welcome.open.settings".localized, systemImage: "gearshape")
+                    Label("welcome.open.settings".localized, systemImage: "arrow.right.circle.fill")
                         .frame(minWidth: 140)
                 }
                 .buttonStyle(.borderedProminent)

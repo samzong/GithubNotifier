@@ -19,7 +19,7 @@ struct MenuBarView: View {
     @State private var visibleMainTabs = MenuBarMainTab.visibleTabs()
 
     private var hasToken: Bool {
-        KeychainHelper.shared.get(forKey: UserPreferences.tokenKeychainKey) != nil
+        KeychainHelper.shared.get(forKey: "github_oauth_access_token") != nil
     }
 
     private var selectedMainTab: MenuBarMainTab {

@@ -1,5 +1,9 @@
 import Foundation
 
+public extension Notification.Name {
+    static let githubTokenUnauthorized = Notification.Name("githubTokenUnauthorized")
+}
+
 @Observable
 @MainActor
 public class NotificationService {
@@ -228,7 +232,10 @@ public class NotificationService {
         for notification in group.notifications {
             do {
                 try await restClient.markNotificationAsRead(threadId: notification.id)
-            } catch {
+        } catch APIError.unauthorized {
+            errorMessage = APIError.unauthorized.localizedDescription
+            NotificationCenter.default.post(name: .githubTokenUnauthorized, object: nil)
+        } catch {
                 // Continue marking others even if one fails
             }
         }
