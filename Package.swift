@@ -15,9 +15,6 @@ let package = Package(
             name: "GitHubNotifierCore",
             dependencies: [],
             path: "Sources/GitHubNotifierCore",
-            resources: [
-                .process("Resources/oauth_config.json"),
-            ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]
@@ -47,6 +44,11 @@ let package = Package(
                     "-Xlinker", "Sources/GitHubNotifier/Info.plist",
                 ]),
             ]
+        ),
+        .testTarget(
+            name: "GitHubNotifierTests",
+            dependencies: ["GitHubNotifier"],
+            path: "Tests/GitHubNotifierTests"
         ),
     ]
 )

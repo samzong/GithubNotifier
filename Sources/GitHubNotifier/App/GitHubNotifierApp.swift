@@ -16,11 +16,15 @@ struct GitHubNotifierApp: App {
     @State private var activityService: ActivityService
     @State private var searchService: SearchService
     @State private var ruleStorage = RuleStorage()
+    @State private var settingsNavigationState = SettingsNavigationState()
+    private let appConfiguration: AppConfiguration
 
     /// Sparkle updater controller for automatic updates
     private let updaterController: SPUStandardUpdaterController
 
     init() {
+        appConfiguration = .load()
+
         // Initialize Sparkle updater
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
@@ -77,17 +81,22 @@ struct GitHubNotifierApp: App {
                 .environment(notificationService)
                 .environment(activityService)
                 .environment(searchService)
+                .environment(settingsNavigationState)
         } label: {
             MenuBarLabel(unreadCount: notificationService.unreadCount)
         }
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView(updater: updaterController.updater)
+            SettingsView(
+                updater: updaterController.updater,
+                oauthClientID: appConfiguration.githubOAuthClientID
+            )
                 .environment(notificationService)
                 .environment(activityService)
                 .environment(searchService)
                 .environment(ruleStorage)
+                .environment(settingsNavigationState)
         }
 
         // Auxiliary windows (Search Management, future: Kanban, AI, etc.)

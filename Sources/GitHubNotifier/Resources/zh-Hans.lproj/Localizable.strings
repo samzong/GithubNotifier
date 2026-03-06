@@ -166,7 +166,6 @@
 
 /* Account Tab - Web Auth */
 "account.webauth.description" = "直接使用 GitHub 账户登录，无需令牌";
-"account.webauth.not_configured" = "OAuth Client ID 未配置，请在 oauth_config.json 中设置 client_id。";
 "account.webauth.signin" = "使用 GitHub 登录";
 "account.webauth.requesting" = "正在请求授权码...";
 "account.webauth.code_prompt" = "在 GitHub 上输入此代码以完成授权：";

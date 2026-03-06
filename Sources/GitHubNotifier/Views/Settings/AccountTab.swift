@@ -37,6 +37,7 @@ struct AccountTab: View {
 
     private let deviceFlowService = GitHubDeviceFlowService()
 
+    let oauthClientID: String
     let settingsWidth: CGFloat
 
     var body: some View {
@@ -99,13 +100,6 @@ struct AccountTab: View {
                 startDeviceFlow()
             }
             .buttonStyle(.borderedProminent)
-            .disabled(GitHubDeviceFlowService.loadClientId() == nil)
-
-            if GitHubDeviceFlowService.loadClientId() == nil {
-                Text("account.webauth.not_configured".localized)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
@@ -226,12 +220,11 @@ struct AccountTab: View {
     // MARK: - Device Flow Logic
 
     private func startDeviceFlow() {
-        guard let clientId = GitHubDeviceFlowService.loadClientId() else { return }
         deviceFlowState = .requestingCode
 
         pollingTask = Task { @MainActor in
             do {
-                let codeResponse = try await deviceFlowService.requestDeviceCode(clientId: clientId)
+                let codeResponse = try await deviceFlowService.requestDeviceCode(clientId: oauthClientID)
 
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(codeResponse.userCode, forType: .string)
@@ -250,7 +243,7 @@ struct AccountTab: View {
                     guard !Task.isCancelled else { break }
 
                     let result = try await deviceFlowService.pollForToken(
-                        clientId: clientId,
+                        clientId: oauthClientID,
                         deviceCode: codeResponse.deviceCode
                     )
 
@@ -333,5 +326,5 @@ struct AccountTab: View {
 }
 
 #Preview {
-    AccountTab(settingsWidth: 450)
+    AccountTab(oauthClientID: "preview-client-id", settingsWidth: 450)
 }

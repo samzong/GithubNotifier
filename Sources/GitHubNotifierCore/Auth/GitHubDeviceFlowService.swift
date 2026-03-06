@@ -66,15 +66,4 @@ public struct GitHubDeviceFlowService: Sendable {
         let tokenResponse = try JSONDecoder().decode(AccessTokenResponse.self, from: data)
         return .token(tokenResponse)
     }
-
-    public static func loadClientId() -> String? {
-        guard let url = Bundle.module.url(forResource: "oauth_config", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-              let clientId = json["client_id"],
-              !clientId.isEmpty,
-              clientId != "YOUR_CLIENT_ID_HERE"
-        else { return nil }
-        return clientId
-    }
 }

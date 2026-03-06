@@ -34,6 +34,8 @@
     <true/>
     <key>SUPublicEDKey</key>
     <string>Xqf5B0TuOjxRegR76wxXvw7fIOc+6Pj1IZ5IVBbM4qw=</string>
+    <key>GitHubOAuthClientID</key>
+    <string>Ov23li1rOHiShoEHTNSk</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>

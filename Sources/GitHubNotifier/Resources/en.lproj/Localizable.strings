@@ -166,7 +166,6 @@
 
 /* Account Tab - Web Auth */
 "account.webauth.description" = "Sign in with your GitHub account directly, no token required";
-"account.webauth.not_configured" = "OAuth client ID not configured. Set client_id in oauth_config.json.";
 "account.webauth.signin" = "Sign in with GitHub";
 "account.webauth.requesting" = "Requesting authorization code...";
 "account.webauth.code_prompt" = "Enter this code on GitHub to authorize:";

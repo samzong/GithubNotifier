@@ -4,14 +4,17 @@ import SwiftUI
 
 struct SettingsView: View {
     let updater: SPUUpdater
+    let oauthClientID: String
+    @Environment(SettingsNavigationState.self) private var settingsNavigationState
     @Environment(NotificationService.self) private var notificationService
     @AppStorage("settings.selectedTab") private var selectedTab: SettingsTab = .general
+    @State private var tabSelection = SettingsTabSelection(savedTab: .general)
 
     private let settingsWidth: CGFloat = 640
     private let settingsHeight: CGFloat = 540
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: selectedTabBinding) {
             GeneralTab(settingsWidth: settingsWidth)
                 .environment(notificationService)
                 .tabItem {
@@ -19,7 +22,10 @@ struct SettingsView: View {
                 }
                 .tag(SettingsTab.general)
 
-            AccountTab(settingsWidth: settingsWidth)
+            AccountTab(
+                oauthClientID: oauthClientID,
+                settingsWidth: settingsWidth
+            )
                 .environment(notificationService)
                 .tabItem {
                     Label("settings.tab.account".localized, systemImage: "person.crop.circle")
@@ -46,6 +52,28 @@ struct SettingsView: View {
         }
         .frame(width: settingsWidth, height: settingsHeight)
         .padding()
+        .onAppear {
+            tabSelection.restoreSavedTab(selectedTab)
+            applyPendingTabIfNeeded()
+        }
+        .onChange(of: settingsNavigationState.pendingTab) { _, pendingTab in
+            guard pendingTab != nil else { return }
+            applyPendingTabIfNeeded()
+        }
+    }
+
+    private var selectedTabBinding: Binding<SettingsTab> {
+        Binding(
+            get: { tabSelection.displayedTab },
+            set: { newValue in
+                tabSelection.userSelectedTab(newValue)
+                selectedTab = tabSelection.savedTab
+            }
+        )
+    }
+
+    private func applyPendingTabIfNeeded() {
+        tabSelection.applyPendingTab(settingsNavigationState.consumePendingTab())
     }
 }
 

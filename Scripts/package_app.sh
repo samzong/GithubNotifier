@@ -26,6 +26,7 @@ BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 echo "===> Packaging ${APP_NAME}.app (${CONFIG}, ${ARCH})..."
 
 # Create app bundle structure
+rm -rf "${BUNDLE}"
 mkdir -p "${BUNDLE}/Contents/MacOS"
 mkdir -p "${BUNDLE}/Contents/Resources"
 

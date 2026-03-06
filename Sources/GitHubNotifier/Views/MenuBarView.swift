@@ -6,6 +6,7 @@ struct MenuBarView: View {
     @Environment(NotificationService.self) private var notificationService
     @Environment(ActivityService.self) private var activityService
     @Environment(SearchService.self) private var searchService
+    @Environment(SettingsNavigationState.self) private var settingsNavigationState
     @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismiss) private var dismiss
@@ -332,12 +333,8 @@ struct MenuBarView: View {
         }
     }
 
-    @AppStorage("settings.selectedTab") private var settingsSelectedTab: SettingsTab = .general
-
     private func openSettingsAndBringToFront(tab: SettingsTab? = nil) {
-        if let tab {
-            settingsSelectedTab = tab
-        }
+        settingsNavigationState.open(tab: tab)
         closeMenuBarWindow()
         openSettings()
 

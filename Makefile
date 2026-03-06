@@ -89,6 +89,10 @@ run: ## Quick run for development
 
 ##@ Code Quality
 # ------------------------------------------------------------------------------
+.PHONY: test
+test: ## Run all Swift tests
+	swift test
+
 .PHONY: lint
 lint: ## Run swiftlint
 	swiftlint Sources
