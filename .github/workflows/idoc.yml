@@ -35,9 +35,6 @@ jobs:
             About:
               url: https://github.com/samzong
               target: __blank
-          sideEffectFiles:
-            - README_zh.md
-          
           cacheFileStat: true
 
           footer: |

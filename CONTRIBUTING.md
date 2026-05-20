@@ -46,14 +46,14 @@ Please be respectful and constructive in all interactions. We welcome contributo
 # Build debug version
 make build
 
-# Build release version
-make build-release
+# Build release DMGs
+make dmg
 
 # Build and run for development
 make run
 
 # Install to ~/Applications
-make install-app
+make install
 ```
 
 ### Code Quality Commands

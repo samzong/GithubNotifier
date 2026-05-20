@@ -29,22 +29,23 @@
 - 30-second rule: core flows should finish within half a minute
 - Keep it lightweight: do triage here, deep work in GitHub
 - Use-and-go: quick actions in a transient window, not a permanent workspace
-- Highlight developer hierarchy: core maintainers vs. casual contributors
 
 ## Current Capabilities
 
-- Menubar-first workflow with Notifications and Activities tabs
-- Unified Issues/PRs list with quick filters
+- Menubar-first workflow with configurable Notifications, Activities, and Search tabs
+- GitHub OAuth device flow sign-in
+- Unread GitHub notifications with issue/PR grouping, mark-as-read actions, and system notifications
+- Activities view powered by GitHub Search for open issues/PRs you created, are assigned to, are mentioned in, or were requested to review
+- Saved searches for issues, PRs, and repositories, with optional pinned searches in the menu bar
+- Notification rules for matching repository, organization, notification type, or reason, with mark-as-read and suppress-notification actions
 - Status cache and CI check summary in list items
-- GraphQL Search API wrapper for cross-repo queries
 - Auto-updates via Sparkle
 - i18n support (EN / zh-Hans)
 
 ## Next Up
 
-- User relationship model + key developer highlighting
-- Activities dashboard expansion
-- Longer-term: activity feeds, lightweight repo kanban, advanced search, AI companion
+- Activity and search workflow refinements
+- More rule actions and notification controls
 
 ## Requirements
 
