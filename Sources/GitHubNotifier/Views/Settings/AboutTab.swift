@@ -6,7 +6,7 @@ struct AboutTab: View {
     let settingsWidth: CGFloat
 
     private let repoOwner = "samzong"
-    private let repoName = "GitHubNotifier"
+    private let repoName = "branchlight"
 
     var body: some View {
         Form {
@@ -35,7 +35,7 @@ struct AboutTab: View {
                 .frame(width: 44, height: 44)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("GitHubNotifier")
+                Text("Branchlight")
                     .font(.headline)
                 Text("\(appVersion) (\(buildNumber))")
                     .font(.caption)

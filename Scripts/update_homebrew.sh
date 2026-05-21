@@ -6,9 +6,12 @@ set -e
 : "${VERSION:?VERSION is required}"
 : "${MARKETING_SEMVER:?MARKETING_SEMVER is required}"
 : "${APP_NAME:?APP_NAME is required}"
+: "${REPO_NAME:?REPO_NAME is required}"
 : "${HOMEBREW_TAP_REPO:?HOMEBREW_TAP_REPO is required}"
 : "${CASK_FILE:?CASK_FILE is required}"
 : "${BRANCH_NAME:?BRANCH_NAME is required}"
+
+LEGACY_CASK_FILE="${LEGACY_CASK_FILE:-Casks/github-notifier.rb}"
 
 echo "===> Starting Homebrew cask update process..."
 echo "===> Current version information:"
@@ -18,8 +21,8 @@ echo "    - MARKETING_SEMVER: ${MARKETING_SEMVER}"
 rm -rf tmp && mkdir -p tmp
 
 echo "===> Downloading DMG files..."
-curl -sfL -o "tmp/${APP_NAME}-x86_64.dmg" "https://github.com/samzong/${APP_NAME}/releases/download/v${MARKETING_SEMVER}/${APP_NAME}-x86_64.dmg"
-curl -sfL -o "tmp/${APP_NAME}-arm64.dmg" "https://github.com/samzong/${APP_NAME}/releases/download/v${MARKETING_SEMVER}/${APP_NAME}-arm64.dmg"
+curl -sfL -o "tmp/${APP_NAME}-x86_64.dmg" "https://github.com/samzong/${REPO_NAME}/releases/download/v${MARKETING_SEMVER}/${APP_NAME}-x86_64.dmg"
+curl -sfL -o "tmp/${APP_NAME}-arm64.dmg" "https://github.com/samzong/${REPO_NAME}/releases/download/v${MARKETING_SEMVER}/${APP_NAME}-arm64.dmg"
 
 echo "===> Calculating SHA256 checksums..."
 X86_64_SHA256=$(shasum -a 256 "tmp/${APP_NAME}-x86_64.dmg" | cut -d ' ' -f 1)
@@ -37,6 +40,21 @@ echo "    - Creating new branch: ${BRANCH_NAME}"
 git checkout -b "${BRANCH_NAME}"
 
 echo "===> Updating cask file..."
+if [ ! -f "${CASK_FILE}" ] && [ -f "${LEGACY_CASK_FILE}" ]; then
+    echo "    - Creating ${CASK_FILE} from legacy ${LEGACY_CASK_FILE}"
+    cp "${LEGACY_CASK_FILE}" "${CASK_FILE}"
+    sed -i '' \
+        -e 's/cask "github-notifier"/cask "branchlight"/' \
+        -e 's#github.com/samzong/GitHubNotifier/releases#github.com/samzong/branchlight/releases#g' \
+        -e 's#GitHubNotifier-#Branchlight-#g' \
+        -e 's/name "GitHub Notifier"/name "Branchlight"/' \
+        -e 's/desc "A macOS menu bar app for GitHub notifications"/desc "A quiet macOS menubar hub for GitHub work"/' \
+        -e 's#homepage "https://github.com/samzong/GitHubNotifier"#homepage "https://github.com/samzong/branchlight"#' \
+        -e 's/app "GitHubNotifier.app"/app "Branchlight.app"/' \
+        -e 's#appdir}/GitHubNotifier.app#appdir}/Branchlight.app#' \
+        "${CASK_FILE}"
+fi
+
 if [ -f "${CASK_FILE}" ]; then
     echo "    - Updating existing cask file with sed..."
     echo "    - Updating version to ${MARKETING_SEMVER}"

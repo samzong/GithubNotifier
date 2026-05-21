@@ -1,6 +1,6 @@
-# Contributing to GitHubNotifier
+# Contributing to Branchlight
 
-Thank you for your interest in contributing to GitHubNotifier! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Branchlight! This document provides guidelines and instructions for contributing.
 
 ## Table of Contents
 
@@ -30,12 +30,12 @@ Please be respectful and constructive in all interactions. We welcome contributo
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/GitHubNotifier.git
-   cd GitHubNotifier
+   git clone https://github.com/YOUR_USERNAME/branchlight.git
+   cd branchlight
    ```
 3. Add the upstream remote:
    ```bash
-   git remote add upstream https://github.com/samzong/GitHubNotifier.git
+   git remote add upstream https://github.com/samzong/branchlight.git
    ```
 
 ## Development Setup
@@ -236,7 +236,7 @@ For feature requests, please describe:
 
 If you have questions, feel free to:
 
-- Open a [Issue](https://github.com/samzong/GitHubNotifier/issues)
+- Open an [Issue](https://github.com/samzong/branchlight/issues)
 - Create an issue with the `question` label
 
 Thank you for contributing!

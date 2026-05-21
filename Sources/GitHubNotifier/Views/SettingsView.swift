@@ -70,7 +70,7 @@ struct SettingsView: View {
                 .frame(width: 26, height: 26)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("GitHub Notifier")
+                Text("Branchlight")
                     .font(.callout.weight(.semibold))
                     .lineLimit(1)
                 Text("settings.title".localized)

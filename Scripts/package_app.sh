@@ -8,7 +8,8 @@ set -euo pipefail
 
 CONFIG="${1:-release}"
 ARCH="${2:-$(uname -m)}"
-APP_NAME="GitHubNotifier"
+APP_NAME="${APP_NAME:-Branchlight}"
+EXECUTABLE_NAME="${EXECUTABLE_NAME:-GitHubNotifier}"
 VERSION="${VERSION:-0.1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 
@@ -31,10 +32,10 @@ mkdir -p "${BUNDLE}/Contents/MacOS"
 mkdir -p "${BUNDLE}/Contents/Resources"
 
 # Copy binary
-if [ -f "${BUILD_DIR}/${APP_NAME}" ]; then
-    cp "${BUILD_DIR}/${APP_NAME}" "${BUNDLE}/Contents/MacOS/"
+if [ -f "${BUILD_DIR}/${EXECUTABLE_NAME}" ]; then
+    cp "${BUILD_DIR}/${EXECUTABLE_NAME}" "${BUNDLE}/Contents/MacOS/"
 else
-    echo "❌ Error: Binary not found at ${BUILD_DIR}/${APP_NAME}"
+    echo "❌ Error: Binary not found at ${BUILD_DIR}/${EXECUTABLE_NAME}"
     echo "   Run 'swift build -c ${CONFIG}' first."
     exit 1
 fi
@@ -85,7 +86,7 @@ if [ -d "${SPARKLE_SRC}" ]; then
     
     # Fix rpath to find Sparkle in Frameworks folder
     echo "===> Fixing rpath for Sparkle..."
-    install_name_tool -add_rpath "@executable_path/../Frameworks" "${BUNDLE}/Contents/MacOS/${APP_NAME}" 2>/dev/null || true
+    install_name_tool -add_rpath "@executable_path/../Frameworks" "${BUNDLE}/Contents/MacOS/${EXECUTABLE_NAME}" 2>/dev/null || true
 else
     echo "⚠️  Warning: Sparkle.framework not found at ${SPARKLE_SRC}"
 fi

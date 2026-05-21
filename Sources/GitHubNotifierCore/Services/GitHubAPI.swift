@@ -73,7 +73,7 @@ public final class GitHubAPI: Sendable {
         request.cachePolicy = .reloadIgnoringLocalCacheData
         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.addValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-        request.addValue("GitHubNotifier", forHTTPHeaderField: "User-Agent")
+        request.addValue("Branchlight", forHTTPHeaderField: "User-Agent")
         request.addValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.addValue("no-cache", forHTTPHeaderField: "Pragma")
 

@@ -1,8 +1,10 @@
-# GitHubNotifier - Makefile
+# Branchlight - Makefile
 
 ##@ Project Configuration
 # ------------------------------------------------------------------------------
-APP_NAME := GitHubNotifier
+APP_NAME := Branchlight
+EXECUTABLE_NAME := GitHubNotifier
+REPO_NAME := branchlight
 BUILD_DIR := .build
 PROJECT_DIR := $(shell pwd)
 HOST_ARCH := $(shell uname -m)
@@ -42,8 +44,8 @@ DMG_LABEL_arm64 := Apple Silicon
 
 # Homebrew related variables
 HOMEBREW_TAP_REPO := homebrew-tap
-CASK_FILE := Casks/github-notifier.rb
-BRANCH_NAME := update-github-notifier-$(MARKETING_SEMVER)
+CASK_FILE := Casks/branchlight.rb
+BRANCH_NAME := update-branchlight-$(MARKETING_SEMVER)
 
 # Terminal colors
 RED := \033[0;31m
@@ -72,7 +74,7 @@ version: ## Show version information
 define build_app
 	@echo "$(BLUE)🔨 Building $(APP_NAME) ($(1))...$(NC)"
 	swift build -c $(1) $(if $(2),--triple $(2)-apple-macosx,)
-	VERSION=$(VERSION) BUILD_NUMBER=$(BUILD_NUMBER) ./Scripts/package_app.sh $(1) $(2)
+	APP_NAME=$(APP_NAME) EXECUTABLE_NAME=$(EXECUTABLE_NAME) VERSION=$(VERSION) BUILD_NUMBER=$(BUILD_NUMBER) ./Scripts/package_app.sh $(1) $(2)
 	@echo "$(GREEN)✅ Build completed!$(NC)"
 endef
 
@@ -169,6 +171,7 @@ update-homebrew: ## Update Homebrew Cask (Requires GH_PAT)
 	VERSION=$(VERSION) \
 	MARKETING_SEMVER=$(MARKETING_SEMVER) \
 	APP_NAME=$(APP_NAME) \
+	REPO_NAME=$(REPO_NAME) \
 	HOMEBREW_TAP_REPO=$(HOMEBREW_TAP_REPO) \
 	CASK_FILE=$(CASK_FILE) \
 	BRANCH_NAME=$(BRANCH_NAME) \
