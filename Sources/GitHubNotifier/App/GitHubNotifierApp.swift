@@ -97,7 +97,7 @@ struct GitHubNotifierApp: App {
         }
 
         // Auxiliary windows (Search Management, future: Kanban, AI, etc.)
-        WindowGroup("GitHub Notifier", id: "auxiliary") {
+        WindowGroup("Branchlight", id: "auxiliary") {
             WindowView()
                 .environment(searchService)
                 .onOpenURL { url in

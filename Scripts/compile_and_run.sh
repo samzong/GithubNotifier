@@ -5,11 +5,12 @@
 set -euo pipefail
 
 CONFIG="${1:-debug}"
-APP_NAME="GitHubNotifier"
+APP_NAME="${APP_NAME:-Branchlight}"
+EXECUTABLE_NAME="${EXECUTABLE_NAME:-GitHubNotifier}"
 ARCH=$(uname -m)
 
 echo "===> Stopping any running ${APP_NAME} instances..."
-pkill -x "${APP_NAME}" 2>/dev/null || true
+pkill -x "${EXECUTABLE_NAME}" 2>/dev/null || true
 
 echo "===> Building ${APP_NAME} (${CONFIG})..."
 swift build -c "${CONFIG}"

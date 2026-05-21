@@ -1,18 +1,18 @@
-# GitHubNotifier
+# Branchlight
     
 <div align="center">
-  <img src="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png" alt="GitHubNotifier" width="128" />
+  <img src="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png" alt="Branchlight" width="128" />
   <br />
   <div id="download-section" style="margin: 20px 0;">
-    <a href="https://github.com/samzong/GitHubNotifier/releases/latest" style="text-decoration: none;">
+    <a href="https://github.com/samzong/branchlight/releases/latest" style="text-decoration: none;">
       <img src="https://img.shields.io/badge/⬇%20Download%20for%20macOS-28a745?style=for-the-badge&labelColor=28a745" alt="Download" />
     </a>
   </div>
-  <p>A lightweight macOS menubar hub for your GitHub works.</p>
+  <p>A quiet macOS menubar hub for GitHub work.</p>
   <p>
-    <a href="https://github.com/samzong/GitHubNotifier/releases"><img src="https://img.shields.io/github/v/release/samzong/GitHubNotifier" alt="Release" /></a>
-    <a href="https://github.com/samzong/GitHubNotifier/blob/main/LICENSE"><img src="https://img.shields.io/github/license/samzong/GitHubNotifier" alt="License" /></a>
-    <a href="https://deepwiki.com/samzong/GitHubNotifier"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+    <a href="https://github.com/samzong/branchlight/releases"><img src="https://img.shields.io/github/v/release/samzong/branchlight" alt="Release" /></a>
+    <a href="https://github.com/samzong/branchlight/blob/main/LICENSE"><img src="https://img.shields.io/github/license/samzong/branchlight" alt="License" /></a>
+    <a href="https://deepwiki.com/samzong/branchlight"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
   </p>
 </div>
 

@@ -51,10 +51,10 @@ jobs:
           ls -lh .build/*.dmg
           
           echo "===> Verifying x86_64 DMG..."
-          hdiutil verify .build/GitHubNotifier-x86_64.dmg
+          hdiutil verify .build/Branchlight-x86_64.dmg
           
           echo "===> Verifying arm64 DMG..."
-          hdiutil verify .build/GitHubNotifier-arm64.dmg
+          hdiutil verify .build/Branchlight-arm64.dmg
 
       - name: Sign DMGs with Sparkle
         env:
@@ -68,18 +68,18 @@ jobs:
           xattr -cr "${SIGN_UPDATE}" 2>/dev/null || true
           
           echo "===> Signing x86_64 DMG..."
-          X86_SIG=$("${SIGN_UPDATE}" .build/GitHubNotifier-x86_64.dmg --ed-key-file <(echo "$SPARKLE_ED_KEY"))
+          X86_SIG=$("${SIGN_UPDATE}" .build/Branchlight-x86_64.dmg --ed-key-file <(echo "$SPARKLE_ED_KEY"))
           echo "X86_SIG=${X86_SIG}" >> $GITHUB_ENV
           
           echo "===> Signing arm64 DMG..."
-          ARM_SIG=$("${SIGN_UPDATE}" .build/GitHubNotifier-arm64.dmg --ed-key-file <(echo "$SPARKLE_ED_KEY"))
+          ARM_SIG=$("${SIGN_UPDATE}" .build/Branchlight-arm64.dmg --ed-key-file <(echo "$SPARKLE_ED_KEY"))
           echo "ARM_SIG=${ARM_SIG}" >> $GITHUB_ENV
 
       - name: Generate Appcast
         run: |
           # DMG file sizes
-          X86_SIZE=$(stat -f%z .build/GitHubNotifier-x86_64.dmg)
-          ARM_SIZE=$(stat -f%z .build/GitHubNotifier-arm64.dmg)
+          X86_SIZE=$(stat -f%z .build/Branchlight-x86_64.dmg)
+          ARM_SIZE=$(stat -f%z .build/Branchlight-arm64.dmg)
           
           # Current date in RFC 2822 format
           PUB_DATE=$(date -R)
@@ -89,8 +89,8 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
             <channel>
-              <title>GitHubNotifier Updates</title>
-              <link>https://github.com/samzong/GitHubNotifier</link>
+              <title>Branchlight Updates</title>
+              <link>https://github.com/samzong/branchlight</link>
               <description>Most recent changes with links to updates.</description>
               <language>en</language>
               
@@ -102,7 +102,7 @@ jobs:
                 <sparkle:shortVersionString>${{ env.SEMVER }}</sparkle:shortVersionString>
                 <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
                 <enclosure
-                  url="https://github.com/samzong/GitHubNotifier/releases/download/${{ env.VERSION }}/GitHubNotifier-x86_64.dmg"
+                  url="https://github.com/samzong/branchlight/releases/download/${{ env.VERSION }}/Branchlight-x86_64.dmg"
                   type="application/octet-stream"
                   sparkle:os="macos"
                   ${X86_SIG}
@@ -117,7 +117,7 @@ jobs:
                 <sparkle:shortVersionString>${{ env.SEMVER }}</sparkle:shortVersionString>
                 <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
                 <enclosure
-                  url="https://github.com/samzong/GitHubNotifier/releases/download/${{ env.VERSION }}/GitHubNotifier-arm64.dmg"
+                  url="https://github.com/samzong/branchlight/releases/download/${{ env.VERSION }}/Branchlight-arm64.dmg"
                   type="application/octet-stream"
                   sparkle:os="macos"
                   ${ARM_SIG}
@@ -152,8 +152,8 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            .build/GitHubNotifier-x86_64.dmg
-            .build/GitHubNotifier-arm64.dmg
+            .build/Branchlight-x86_64.dmg
+            .build/Branchlight-arm64.dmg
             .build/appcast.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -164,4 +164,4 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
           event-type: trigger-homebrew-update
-          client-payload: '{"version": "${{ env.VERSION }}"}'
+          client-payload: '{"version": "${{ env.VERSION }}", "repo": "branchlight", "app": "Branchlight", "cask": "branchlight"}'

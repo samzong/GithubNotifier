@@ -135,7 +135,7 @@
 
 /* Test Notification */
 "notification.test.title" = "🎉 Test Notification";
-"notification.test.subtitle" = "GitHubNotifier is working!";
+"notification.test.subtitle" = "Branchlight is working!";
 "notification.test.body" = "Click to open GitHub notifications";
 
 /* Rules Tab */

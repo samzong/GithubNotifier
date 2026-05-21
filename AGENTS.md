@@ -2,7 +2,7 @@
 
 ## Scope
 
-These instructions apply to the whole `GitHubNotifier` repository.
+These instructions apply to the whole `Branchlight` repository.
 
 This is a Swift Package Manager macOS app. Treat the current source, `Package.swift`, `Makefile`, and workflow files as the source of truth. If older docs disagree with those files, follow the code/config first and update docs separately when asked.
 

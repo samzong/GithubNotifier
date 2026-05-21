@@ -5,9 +5,9 @@
     <key>CFBundleIdentifier</key>
     <string>com.samzong.GitHubNotifier</string>
     <key>CFBundleName</key>
-    <string>GitHubNotifier</string>
+    <string>Branchlight</string>
     <key>CFBundleDisplayName</key>
-    <string>GitHub Notifier</string>
+    <string>Branchlight</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
@@ -27,7 +27,7 @@
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 samzong. All rights reserved.</string>
     <key>SUFeedURL</key>
-    <string>https://github.com/samzong/GitHubNotifier/releases/latest/download/appcast.xml</string>
+    <string>https://github.com/samzong/branchlight/releases/latest/download/appcast.xml</string>
     <key>SUEnableAutomaticChecks</key>
     <true/>
     <key>SUAllowsAutomaticUpdates</key>
