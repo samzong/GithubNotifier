@@ -44,16 +44,31 @@ public enum MonitorTarget: Codable, Equatable, Sendable {
 /// Defines a specific monitor item created by the user.
 public struct MonitorDefinition: Codable, Identifiable, Equatable, Sendable {
     public let id: UUID
-    public let target: MonitorTarget
+    public var target: MonitorTarget
+    public var name: String?
     public var isEnabled: Bool
     /// Toggle configuration for specific event kinds (e.g. pr, issue, commit, follow)
     public var eventToggles: [String: Bool]
 
-    public init(id: UUID = UUID(), target: MonitorTarget, isEnabled: Bool = true, eventToggles: [String: Bool] = [:]) {
+    public init(
+        id: UUID = UUID(),
+        target: MonitorTarget,
+        name: String? = nil,
+        isEnabled: Bool = true,
+        eventToggles: [String: Bool] = [:]
+    ) {
         self.id = id
         self.target = target
+        self.name = name
         self.isEnabled = isEnabled
         self.eventToggles = eventToggles
+    }
+
+    public var displayName: String {
+        if let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            return name
+        }
+        return target.displayName
     }
 }
 
