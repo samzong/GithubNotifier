@@ -15,6 +15,7 @@ public class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
     private let notificationCenter = UNUserNotificationCenter.current()
     public weak var notificationService: NotificationService?
+    public weak var monitorStore: MonitorStore?
 
     override private init() {
         super.init()
@@ -144,6 +145,48 @@ public class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
+    // MARK: - Monitor Notifications
+
+    public func sendMonitorNotification(for event: MonitorEvent) async {
+        guard UserDefaults.standard.bool(forKey: "enableSystemNotifications") else {
+            return
+        }
+
+        let status = await checkAuthorizationStatus()
+        guard status == .authorized else {
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+
+        content.title = String(format: NSLocalizedString("notification.monitor.title", comment: ""), event.repo)
+        content.subtitle = event.title
+
+        let actorText = event.actor.isEmpty ? "" : "by @\(event.actor)"
+        let timeText = event.occurredAt.timeAgo()
+        let kindText = event.kind.uppercased()
+
+        content.body = [kindText, actorText, timeText].filter { !$0.isEmpty }.joined(separator: " • ")
+        content.sound = .default
+
+        var userInfo: [String: Any] = ["monitorEventId": event.id]
+        userInfo["url"] = event.url
+        content.userInfo = userInfo
+
+        let identifier = "monitor-\(event.id)-\(Date().timeIntervalSince1970)"
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: nil
+        )
+
+        do {
+            try await notificationCenter.add(request)
+        } catch {
+            print("Failed to send monitor notification: \(error)")
+        }
+    }
+
     // MARK: - UNUserNotificationCenterDelegate
 
     public nonisolated func userNotificationCenter(
@@ -162,6 +205,10 @@ public class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             if let notificationId = userInfo["notificationId"] as? String {
                 await self.markNotificationAsRead(notificationId)
             }
+
+            if let monitorEventId = userInfo["monitorEventId"] as? String {
+                await self.markMonitorEventAsRead(monitorEventId)
+            }
         }
 
         completionHandler()
@@ -177,6 +224,15 @@ public class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             await service.markAsRead(notification: notification)
             print("Notification marked as read: \(notificationId)")
         }
+    }
+
+    private func markMonitorEventAsRead(_ eventId: String) async {
+        guard let store = monitorStore else {
+            print("MonitorStore not available")
+            return
+        }
+        store.markEventRead(id: eventId)
+        print("MonitorEvent marked as read: \(eventId)")
     }
 
     public nonisolated func userNotificationCenter(

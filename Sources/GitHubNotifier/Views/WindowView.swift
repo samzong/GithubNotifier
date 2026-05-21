@@ -33,6 +33,8 @@ struct WindowView: View {
         switch window {
         case .searchManagement:
             SearchWindowView()
+        case .monitorManagement:
+            MonitorWindowView()
         }
     }
 }

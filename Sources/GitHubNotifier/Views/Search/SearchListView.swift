@@ -191,6 +191,6 @@ struct SearchListView: View {
 
 #Preview {
     SearchListView(selectedSearchId: .constant(nil)) { _ in }
-        .environment(SearchService())
+        .environment(SearchService(session: GitHubSession()))
         .frame(width: 360, height: 400)
 }

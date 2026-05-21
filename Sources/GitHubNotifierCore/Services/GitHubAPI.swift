@@ -146,3 +146,218 @@ public enum APIError: Error, LocalizedError {
         }
     }
 }
+
+// MARK: - Monitor Events and Code Search Structures & Methods
+
+public struct GitHubEvent: Codable, Sendable {
+    public let id: String
+    public let type: String
+    public let actor: Actor
+    public let repo: Repo
+    public let createdAt: Date
+    public let payload: Payload?
+
+    public struct Actor: Codable, Sendable {
+        public let login: String
+    }
+
+    public struct Repo: Codable, Sendable {
+        public let name: String
+    }
+
+    public struct Payload: Codable, Sendable {
+        public let action: String?
+        public let issue: IssueOrPR?
+        public let pullRequest: IssueOrPR?
+        public let release: ReleaseInfo?
+        public let commits: [CommitInfo]?
+        public let comment: CommentInfo?
+        public let head: String?
+
+        enum CodingKeys: String, CodingKey {
+            case action
+            case issue
+            case pullRequest = "pull_request"
+            case release
+            case commits
+            case comment
+            case head
+        }
+    }
+
+    public struct IssueOrPR: Codable, Sendable {
+        public let title: String
+        public let htmlUrl: String
+
+        enum CodingKeys: String, CodingKey {
+            case title
+            case htmlUrl = "html_url"
+        }
+    }
+
+    public struct ReleaseInfo: Codable, Sendable {
+        public let name: String?
+        public let tagName: String
+        public let htmlUrl: String
+
+        enum CodingKeys: String, CodingKey {
+            case name
+            case tagName = "tag_name"
+            case htmlUrl = "html_url"
+        }
+    }
+
+    public struct CommitInfo: Codable, Sendable {
+        public let sha: String
+        public let message: String
+    }
+
+    public struct CommentInfo: Codable, Sendable {
+        public let body: String?
+        public let htmlUrl: String
+
+        enum CodingKeys: String, CodingKey {
+            case body
+            case htmlUrl = "html_url"
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, type, actor, repo, payload
+        case createdAt = "created_at"
+    }
+}
+
+extension GitHubEvent {
+    public var monitorKind: String {
+        switch type {
+        case "PushEvent": "commit"
+        case "IssuesEvent": "issue"
+        case "PullRequestEvent": "pr"
+        case "IssueCommentEvent", "PullRequestReviewCommentEvent", "CommitCommentEvent": "comment"
+        case "ReleaseEvent": "release"
+        default: "activity"
+        }
+    }
+
+    public var monitorTitle: String {
+        switch type {
+        case "PushEvent":
+            if let firstCommit = payload?.commits?.first {
+                return "Pushed commit: \(firstCommit.message)"
+            }
+            return "Pushed commits to repository"
+        case "IssuesEvent":
+            let action = payload?.action ?? "opened"
+            let issueTitle = payload?.issue?.title ?? ""
+            return "\(action.capitalized) Issue: \(issueTitle)"
+        case "PullRequestEvent":
+            let action = payload?.action ?? "opened"
+            let prTitle = payload?.pullRequest?.title ?? ""
+            return "\(action.capitalized) PR: \(prTitle)"
+        case "IssueCommentEvent":
+            if let title = payload?.issue?.title, !title.isEmpty {
+                return "Commented on: \(title)"
+            }
+            return "Commented on issue"
+        case "PullRequestReviewCommentEvent":
+            if let title = payload?.pullRequest?.title, !title.isEmpty {
+                return "Commented on: \(title)"
+            }
+            return "Commented on pull request"
+        case "CommitCommentEvent":
+            return "Commented on commit"
+        case "ReleaseEvent":
+            let tagName = payload?.release?.tagName ?? ""
+            return "Released version: \(tagName)"
+        default:
+            return "Triggered \(type) activity"
+        }
+    }
+
+    public var monitorURL: String {
+        if let url = payload?.comment?.htmlUrl { return url }
+        if let url = payload?.issue?.htmlUrl { return url }
+        if let url = payload?.pullRequest?.htmlUrl { return url }
+        if let url = payload?.release?.htmlUrl { return url }
+        if type == "PushEvent" {
+            if let sha = payload?.commits?.first?.sha, !sha.isEmpty {
+                return "https://github.com/\(repo.name)/commit/\(sha)"
+            }
+            if let head = payload?.head, !head.isEmpty {
+                return "https://github.com/\(repo.name)/commit/\(head)"
+            }
+        }
+        return "https://github.com/\(repo.name)"
+    }
+}
+
+public struct GitHubCodeSearchResult: Codable, Sendable {
+    public let items: [Item]
+
+    public struct Item: Codable, Sendable {
+        public let sha: String
+        public let name: String
+        public let path: String
+        public let htmlUrl: String
+        public let repository: Repository
+
+        enum CodingKeys: String, CodingKey {
+            case sha, name, path
+            case htmlUrl = "html_url"
+            case repository
+        }
+    }
+
+    public struct Repository: Codable, Sendable {
+        public let fullName: String
+
+        enum CodingKeys: String, CodingKey {
+            case fullName = "full_name"
+        }
+    }
+}
+
+extension GitHubAPI {
+    /// Fetch public events for a specific user.
+    public func fetchUserEvents(username: String) async throws -> [GitHubEvent] {
+        let endpoint = "\(baseURL)/users/\(username)/events"
+        let data = try await makeRequest(endpoint: endpoint)
+        return try jsonDecoder.decode([GitHubEvent].self, from: data)
+    }
+
+    /// Fetch events for a specific repository.
+    public func fetchRepoEvents(owner: String, repo: String) async throws -> [GitHubEvent] {
+        let endpoint = "\(baseURL)/repos/\(owner)/\(repo)/events"
+        let data = try await makeRequest(endpoint: endpoint)
+        return try jsonDecoder.decode([GitHubEvent].self, from: data)
+    }
+
+    /// Search code by query.
+    public func searchCode(query: String) async throws -> GitHubCodeSearchResult {
+        guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            throw APIError.invalidURL
+        }
+        let endpoint = "\(baseURL)/search/code?q=\(encodedQuery)"
+        let data = try await makeRequest(endpoint: endpoint)
+        return try jsonDecoder.decode(GitHubCodeSearchResult.self, from: data)
+    }
+
+    public func userExists(username: String) async -> Bool {
+        do {
+            _ = try await makeRequest(endpoint: "\(baseURL)/users/\(username)")
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    public func repositoryExists(owner: String, repo: String) async -> Bool {
+        do {
+            _ = try await makeRequest(endpoint: "\(baseURL)/repos/\(owner)/\(repo)")
+            return true
+        } catch {
+            return false
+        }
+    }
+}

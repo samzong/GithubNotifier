@@ -38,6 +38,7 @@
 "settings.menubar.tabs.notifications" = "显示“通知”标签页";
 "settings.menubar.tabs.activity" = "显示“动态”标签页";
 "settings.menubar.tabs.search" = "显示“搜索”标签页";
+"settings.menubar.tabs.watching" = "显示“监控”标签页";
 "settings.menubar.tabs.description" = "选择菜单栏窗口中显示的标签页。修改后需重启应用生效。";
 "settings.menubar.tabs.minimum_one" = "至少保留一个标签页开启。";
 
@@ -68,6 +69,9 @@
 "menubar.tab.notifications" = "通知";
 "menubar.tab.activity" = "动态";
 "menubar.tab.search" = "搜索";
+"menubar.tab.watching" = "监控";
+"menubar.watching.empty.title" = "尚未添加监控";
+"menubar.watching.empty.description" = "监控用户、代码库、搜索或代码关键字，并接收本地通知。";
 "menubar.no_items" = "暂无相关条目";
 "menubar.filter.all" = "全部";
 "menubar.filter.created" = "创建";
@@ -132,6 +136,7 @@
 /* Summary Notification */
 "notification.summary.title" = "更多 GitHub 通知";
 "notification.summary.body" = "您还有 %d 条未读通知";
+"notification.monitor.title" = "监控：%@";
 
 /* Test Notification */
 "notification.test.title" = "🎉 测试通知";
@@ -209,3 +214,52 @@
 "common.delete" = "删除";
 "common.edit" = "编辑";
 "common.save" = "保存";
+
+/* Monitor Management */
+"monitor.management.title" = "监控管理";
+"monitor.management.add" = "添加监控";
+"monitor.management.filter.placeholder" = "筛选监控项...";
+"monitor.management.empty" = "未选择监控";
+"monitor.management.empty.subtitle" = "从侧边栏选择一个监控项，或者添加一个新监控来开始追踪 GitHub 事件。";
+"monitor.management.delete.title" = "删除监控";
+"monitor.management.delete.message" = "确定要删除此监控项吗？所有已收集的事件和同步状态都将被清除。";
+"monitor.management.type.account" = "账号";
+"monitor.management.type.repo" = "代码库";
+"monitor.management.type.search" = "已存搜索";
+"monitor.management.type.code" = "代码关键字";
+"monitor.management.target.label" = "监控目标:";
+"monitor.management.status.label" = "同步状态:";
+"monitor.management.cursor.label" = "最新检查点:";
+"monitor.management.events.title" = "已触发事件";
+"monitor.management.events.count" = "%d 项";
+"monitor.management.events.empty" = "暂无事件记录。";
+"monitor.management.add.title" = "添加新监控";
+"monitor.management.add.subtitle" = "选择 GitHub 目标和 Branchlight 要追踪的内容。";
+"monitor.management.add.name.placeholder" = "显示名称";
+"monitor.management.add.input.placeholder" = "URL、@用户名、owner/repo 或查询词";
+"monitor.management.add.type.label" = "监控类型";
+"monitor.management.add.target.label" = "目标";
+"monitor.management.add.account.placeholder" = "@用户名或个人主页 URL";
+"monitor.management.add.repo.placeholder" = "owner/repo 或仓库 URL";
+"monitor.management.add.search.placeholder" = "Issue 或 Pull Request 搜索查询";
+"monitor.management.add.code.placeholder" = "代码搜索查询";
+"monitor.management.add.name.label" = "显示名称";
+"monitor.management.saved_search.label" = "已保存搜索";
+"monitor.management.saved_search.placeholder" = "-- 选择一个搜索 --";
+"monitor.management.sync_now" = "立即同步";
+"monitor.management.status.enabled" = "已启用";
+"monitor.management.status.disabled" = "已停用";
+"monitor.management.cursor.never_synced" = "尚未同步";
+"monitor.management.filters.title" = "事件过滤";
+"monitor.management.filters.description" = "选择哪些活动会触发系统通知。";
+"monitor.management.error.invalid_target" = "请输入有效的监控目标。";
+"monitor.management.error.not_authenticated" = "请先登录后再添加监控。";
+"monitor.management.error.duplicate" = "此目标已存在监控。";
+"monitor.management.error.account_not_found" = "未找到 GitHub 账号“%@”。";
+"monitor.management.error.repo_not_found" = "未找到 GitHub 代码库“%@”。";
+"monitor.event.kind.commits" = "提交";
+"monitor.event.kind.issues" = "Issues";
+"monitor.event.kind.prs" = "Pull Requests";
+"monitor.event.kind.releases" = "Releases";
+"monitor.event.kind.comments" = "评论";
+"monitor.event.kind.activity" = "其他动态";

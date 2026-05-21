@@ -5,8 +5,9 @@ public enum MenuBarMainTab: String, CaseIterable, Sendable {
     case activity
     case notifications
     case search
+    case watching
 
-    public static let displayOrder: [MenuBarMainTab] = [.notifications, .activity, .search]
+    public static let displayOrder: [MenuBarMainTab] = [.notifications, .activity, .search, .watching]
 
     public var titleKey: String {
         switch self {
@@ -16,6 +17,8 @@ public enum MenuBarMainTab: String, CaseIterable, Sendable {
             "menubar.tab.activity"
         case .search:
             "menubar.tab.search"
+        case .watching:
+            "menubar.tab.watching"
         }
     }
 
@@ -27,6 +30,8 @@ public enum MenuBarMainTab: String, CaseIterable, Sendable {
             "list.bullet.rectangle"
         case .search:
             "magnifyingglass"
+        case .watching:
+            "waveform.path.ecg"
         }
     }
 
@@ -38,6 +43,8 @@ public enum MenuBarMainTab: String, CaseIterable, Sendable {
             UserPreferences.menubarShowActivityTabKey
         case .search:
             UserPreferences.menubarShowSearchTabKey
+        case .watching:
+            UserPreferences.menubarShowWatchingTabKey
         }
     }
 

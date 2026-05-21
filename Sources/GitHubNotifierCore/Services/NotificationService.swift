@@ -7,12 +7,11 @@ public class NotificationService {
     public var currentUser: GitHubGraphQLClient.ViewerInfo?
     public var isLoading = false
     public var errorMessage: String?
-    public private(set) var isAuthenticated = false
+    public var isAuthenticated: Bool { session.isAuthenticated }
 
     public var unreadCount: Int { notifications.count }
 
-    private var restClient: GitHubAPI?
-    private var graphqlClient: GitHubGraphQLClient?
+    private let session: GitHubSession
     // nonisolated(unsafe) required for mutable properties accessed from deinit
     @ObservationIgnored private nonisolated(unsafe) var autoRefreshTask: Task<Void, Never>?
     @ObservationIgnored private nonisolated(unsafe) var initialFetchTask: Task<Void, Never>?
@@ -25,11 +24,9 @@ public class NotificationService {
     public var ruleStorage: RuleStorage?
     private let ruleEngine = RuleEngine()
 
-    public init(token: String? = nil) {
-        if let token {
-            self.restClient = GitHubAPI(token: token)
-            self.graphqlClient = GitHubGraphQLClient(token: token)
-            self.isAuthenticated = true
+    public init(session: GitHubSession) {
+        self.session = session
+        if session.isAuthenticated {
             startAutoRefreshIfNeeded()
         }
     }
@@ -48,19 +45,13 @@ public class NotificationService {
         }
     }
 
-    public func configure(token: String) {
-        self.restClient = GitHubAPI(token: token)
-        self.graphqlClient = GitHubGraphQLClient(token: token)
-        isAuthenticated = true
+    public func configure() {
         startAutoRefreshIfNeeded()
     }
 
     public func clearToken() {
         stopAutoRefresh()
         initialFetchTask?.cancel()
-        restClient = nil
-        graphqlClient = nil
-        isAuthenticated = false
         notifications = []
         errorMessage = nil
         isLoading = false
@@ -71,7 +62,7 @@ public class NotificationService {
     }
 
     public func fetchNotifications(isAutoRefresh: Bool = false) async {
-        guard let restClient else {
+        guard let restClient = session.restClient else {
             errorMessage = "GitHub token not configured"
             return
         }
@@ -100,7 +91,7 @@ public class NotificationService {
     }
 
     public func fetchCurrentUser() async {
-        guard let graphqlClient else { return }
+        guard let graphqlClient = session.graphqlClient else { return }
         do {
             currentUser = try await graphqlClient.fetchViewer()
         } catch {
@@ -109,7 +100,7 @@ public class NotificationService {
     }
 
     private func loadNotificationDetails() async {
-        guard let graphqlClient else { return }
+        guard let graphqlClient = session.graphqlClient else { return }
 
         var requests: [(cacheKey: String, owner: String, repo: String, number: Int, type: NotificationSubjectType)] = []
 
@@ -203,7 +194,7 @@ public class NotificationService {
     }
 
     public func markAsRead(notification: GitHubNotification) async {
-        guard let restClient else { return }
+        guard let restClient = session.restClient else { return }
 
         do {
             try await restClient.markNotificationAsRead(threadId: notification.id)
@@ -227,7 +218,7 @@ public class NotificationService {
 
     /// Mark all notifications in a group as read
     public func markGroupAsRead(_ group: NotificationGroup) async {
-        guard let restClient else { return }
+        guard let restClient = session.restClient else { return }
 
         for notification in group.notifications {
             do {

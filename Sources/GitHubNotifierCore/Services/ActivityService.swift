@@ -59,16 +59,15 @@ public class ActivityService {
     public private(set) var isLoading = false
     public private(set) var errorMessage: String?
 
-    private var graphqlClient: GitHubGraphQLClient?
+    private let session: GitHubSession
 
-    public init() {}
-
-    public func configure(token: String) {
-        self.graphqlClient = GitHubGraphQLClient(token: token)
+    public init(session: GitHubSession) {
+        self.session = session
     }
 
+    public func configure() {}
+
     public func clearToken() {
-        graphqlClient = nil
         createdIssues = []
         createdPRs = []
         assignedIssues = []
@@ -81,7 +80,7 @@ public class ActivityService {
 
     /// Fetch user-related Items, optionally filtered by type
     public func fetchMyItems(type: SearchResultItem.ItemType? = nil) async {
-        guard let graphqlClient else {
+        guard let graphqlClient = session.graphqlClient else {
             errorMessage = "Not authenticated"
             return
         }

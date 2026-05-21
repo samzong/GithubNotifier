@@ -6,6 +6,8 @@ struct MenuBarView: View {
     @Environment(NotificationService.self) private var notificationService
     @Environment(ActivityService.self) private var activityService
     @Environment(SearchService.self) private var searchService
+    @Environment(MonitorStore.self) private var monitorStore
+    @Environment(MonitorEngine.self) private var monitorEngine
     @Environment(SettingsNavigationState.self) private var settingsNavigationState
     @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
@@ -77,7 +79,8 @@ struct MenuBarView: View {
                     issuesCount: currentIssuesCount,
                     prsCount: currentPrsCount,
                     isMarkingAsRead: isMarkingAsRead,
-                    isLoading: notificationService.isLoading || activityService.isLoading || searchService.isLoading,
+                    isLoading: notificationService.isLoading || activityService.isLoading || searchService.isLoading || monitorEngine
+                        .isSyncing,
                     pinnedSearches: searchService.savedSearches.filter { $0.isEnabled && $0.isPinned },
                     selectedSearchId: Binding(
                         get: { selectedSearchFilterId },
@@ -85,8 +88,12 @@ struct MenuBarView: View {
                     ),
                     onMarkAsRead: markFilteredAsRead,
                     onRefresh: refreshCurrentTab,
-                    onManage: effectiveMainTab == .search ? {
-                        openAuxiliaryWindowAndBringToFront(window: .searchManagement)
+                    onManage: (effectiveMainTab == .search || effectiveMainTab == .watching) ? {
+                        if effectiveMainTab == .search {
+                            openAuxiliaryWindowAndBringToFront(window: .searchManagement)
+                        } else {
+                            openAuxiliaryWindowAndBringToFront(window: .monitorManagement)
+                        }
                     } : nil
                 )
 
@@ -159,6 +166,57 @@ struct MenuBarView: View {
                 openActivityItem(item)
             }
             .environment(searchService)
+
+        case .watching:
+            if monitorStore.monitors.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "waveform.path.ecg")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.secondary)
+
+                    Text("menubar.watching.empty.title".localized)
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+
+                    Text("menubar.watching.empty.description".localized)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+
+                    Button("monitor.management.title".localized) {
+                        openAuxiliaryWindowAndBringToFront(window: .monitorManagement)
+                    }
+                    .liquidGlassButtonStyle(prominent: true)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    if monitorStore.events.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "circle.dashed")
+                                .font(.system(size: 32))
+                                .foregroundStyle(.secondary)
+                            Text("monitor.management.events.empty".localized)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                        .listRowBackground(Color.clear)
+                    } else {
+                        ForEach(monitorStore.events) { event in
+                            MenuBarEventRow(event: event) {
+                                monitorStore.markEventRead(id: event.id)
+                                if let url = URL(string: event.url) {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }
+                        }
+                    }
+                }
+                .listStyle(.plain)
+            }
         }
     }
 
@@ -170,6 +228,8 @@ struct MenuBarView: View {
             activityService.items(for: .all).count
         case .search:
             searchService.items.count
+        case .watching:
+            monitorStore.events.count
         }
     }
 
@@ -181,6 +241,8 @@ struct MenuBarView: View {
             activityService.issues(for: .all).count
         case .search:
             searchService.items.count(where: { $0.itemType == .issue })
+        case .watching:
+            0
         }
     }
 
@@ -192,6 +254,8 @@ struct MenuBarView: View {
             activityService.pullRequests(for: .all).count
         case .search:
             searchService.items.count(where: { $0.itemType == .pullRequest })
+        case .watching:
+            0
         }
     }
 
@@ -233,6 +297,9 @@ struct MenuBarView: View {
         if searchService.items.isEmpty {
             await searchService.fetchAll()
         }
+        if monitorStore.events.isEmpty {
+            await monitorEngine.syncAll()
+        }
     }
 
     @MainActor
@@ -251,6 +318,8 @@ struct MenuBarView: View {
             }
         case .search:
             await searchService.fetchAll()
+        case .watching:
+            await monitorEngine.syncAll()
         }
     }
 
@@ -265,6 +334,11 @@ struct MenuBarView: View {
         guard !isMarkingAsRead else { return }
         isMarkingAsRead = true
         defer { isMarkingAsRead = false }
+
+        if effectiveMainTab == .watching {
+            monitorStore.markAllEventsRead()
+            return
+        }
 
         let notificationsToMark: [GitHubNotification] = switch selectedSubTab {
         case .all:
@@ -362,6 +436,74 @@ struct MenuBarView: View {
         dismiss()
         if let keyWindow = NSApplication.shared.keyWindow {
             keyWindow.performClose(nil)
+        }
+    }
+}
+
+struct MenuBarEventRow: View {
+    let event: MonitorEvent
+    let onTap: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: iconForEventKind(event.kind))
+                .font(.system(size: 13))
+                .foregroundStyle(colorForEventKind(event.kind))
+                .frame(width: 24, height: 24)
+                .background(colorForEventKind(event.kind).opacity(0.12))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    if !event.actor.isEmpty {
+                        Text("@\(event.actor)")
+                            .fontWeight(.semibold)
+                    }
+                    Text(event.repo)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(event.occurredAt.timeAgo())
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .font(.caption)
+
+                Text(event.title)
+                    .font(.subheadline)
+                    .foregroundStyle(event.isRead ? .secondary : .primary)
+                    .fontWeight(event.isRead ? .regular : .semibold)
+                    .lineLimit(2)
+            }
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onTap()
+        }
+    }
+
+    private func iconForEventKind(_ kind: String) -> String {
+        switch kind {
+        case "commit": "arrow.triangle.pull"
+        case "issue": "exclamationmark.bubble"
+        case "pr": "arrow.triangle.merge"
+        case "release": "shippingbox"
+        case "comment": "text.bubble"
+        case "code_match": "doc.text.magnifyingglass"
+        default: "bell"
+        }
+    }
+
+    private func colorForEventKind(_ kind: String) -> Color {
+        switch kind {
+        case "commit": .blue
+        case "issue": .green
+        case "pr": .purple
+        case "release": .orange
+        case "comment": .teal
+        case "code_match": .cyan
+        default: .secondary
         }
     }
 }

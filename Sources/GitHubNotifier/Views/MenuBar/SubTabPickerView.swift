@@ -26,6 +26,8 @@ struct SubTabPickerView: View {
                 notificationActivitySegmentedControl
             case .search:
                 searchSegmentedControl
+            case .watching:
+                Color.clear.frame(height: 0)
             }
 
             Spacer(minLength: 8)
@@ -87,6 +89,12 @@ struct SubTabPickerView: View {
                 refreshButton
 
             case .search:
+                if let onManage {
+                    manageButton(action: onManage)
+                }
+                refreshButton
+
+            case .watching:
                 if let onManage {
                     manageButton(action: onManage)
                 }

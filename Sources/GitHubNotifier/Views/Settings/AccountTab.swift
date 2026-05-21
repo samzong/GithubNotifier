@@ -28,8 +28,10 @@ private enum DeviceFlowState: Equatable {
 }
 
 struct AccountTab: View {
+    @Environment(GitHubSession.self) private var session
     @Environment(NotificationService.self) private var notificationService
     @Environment(ActivityService.self) private var activityService
+    @Environment(SearchService.self) private var searchService
 
     @State private var deviceFlowState: DeviceFlowState = .idle
     @State private var pollingTask: Task<Void, Never>?
@@ -251,8 +253,10 @@ struct AccountTab: View {
                     switch result {
                     case let .token(tokenResponse):
                         await AuthStore.shared.saveToken(tokenResponse.accessToken)
-                        notificationService.configure(token: tokenResponse.accessToken)
-                        activityService.configure(token: tokenResponse.accessToken)
+                        session.configure(token: tokenResponse.accessToken)
+                        notificationService.configure()
+                        activityService.configure()
+                        searchService.configure()
                         await notificationService.fetchCurrentUser()
                         let username = notificationService.currentUser?.login ?? ""
                         countdownTask?.cancel()
@@ -307,8 +311,10 @@ struct AccountTab: View {
         Task {
             await AuthStore.shared.clearToken()
         }
+        session.clear()
         notificationService.clearToken()
         activityService.clearToken()
+        searchService.clearToken()
         deviceFlowState = .idle
     }
 
