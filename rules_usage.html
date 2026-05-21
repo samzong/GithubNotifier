@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHubNotifier Rules Engine Guide GitHubNotifier</title>
-    <meta name="description" content="The Rules Engine is a powerful feature in GitHubNotifier designed to help you automatically filter, categorize, and mana">
-    <meta name="keywords" content="macOS, GitHub, Notifier, Menubar, SwiftUI, Developer Tools">
+    <title>Branchlight Rules Engine Guide Branchlight</title>
+    <meta name="description" content="The Rules Engine is a powerful feature in Branchlight designed to help you automatically filter, categorize, and manage ">
+    <meta name="keywords" content="macOS, GitHub, Branchlight, Menubar, SwiftUI, Developer Tools">
     <link rel="stylesheet" type="text/css" href="css/main.css?v=1.34.4">
     <link rel="stylesheet" type="text/css" href="css/tocbot.css?v=1.34.4">
     <link rel="stylesheet" type="text/css" href="css/media.css?v=1.34.4">
@@ -20,13 +20,13 @@
   </head>
   <body id="idoctotop"><a href="#idoctotop" class="gototop">top</a>
     <header class="header">
-      <article class="inner warpper" style="max-width:720px;"><a class="logo" href="index.html"><img alt="GitHubNotifier logo" src="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png">
-<span class="title">GitHubNotifier</span></a>
+      <article class="inner warpper" style="max-width:720px;"><a class="logo" href="index.html"><img alt="Branchlight logo" src="Sources/GitHubNotifier/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png">
+<span class="title">Branchlight</span></a>
         <div class="content">
           <ul class="menu">
             <li><a href="index.html" target="" class="">Home</a></li>
             <li><a href="https://github.com/samzong" target="__blank" class="">About</a></li>
-          </ul><a href="https://github.com/samzong/GitHubNotifier" target="_blank" rel="noopener noreferrer" title="Github" name="Github" class="github"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          </ul><a href="https://github.com/samzong/branchlight" target="_blank" rel="noopener noreferrer" title="Github" name="Github" class="github"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
             </svg></a>
           <dark-mode permanent=""></dark-mode>
@@ -35,8 +35,8 @@
     </header>
     <div style="max-width:720px;" class="warpper-content warpper notocs">
       <markdown-style theme-auto-switch-disabled="">
-        <h1 id="githubnotifier-rules-engine-guide"><a aria-hidden="true" tabindex="-1" href="#githubnotifier-rules-engine-guide" class="anchor"><span class="icon icon-link"></span></a>GitHubNotifier Rules Engine Guide</h1>
-        <p>The <strong>Rules Engine</strong> is a powerful feature in GitHubNotifier designed to help you automatically filter, categorize, and manage your GitHub notifications. By defining custom rules, you can ensure critical notifications stand out while automatically handling distractions.</p>
+        <h1 id="branchlight-rules-engine-guide"><a aria-hidden="true" tabindex="-1" href="#branchlight-rules-engine-guide" class="anchor"><span class="icon icon-link"></span></a>Branchlight Rules Engine Guide</h1>
+        <p>The <strong>Rules Engine</strong> is a powerful feature in Branchlight designed to help you automatically filter, categorize, and manage your GitHub notifications. By defining custom rules, you can ensure critical notifications stand out while automatically handling distractions.</p>
         <h2 id="accessing-rules-settings"><a aria-hidden="true" tabindex="-1" href="#accessing-rules-settings" class="anchor"><span class="icon icon-link"></span></a>Accessing Rules Settings</h2>
         <ol>
           <li>Open <strong>Settings</strong>.</li>
@@ -205,13 +205,13 @@
     if (platform.includes('mac')) {
       // macOS
       if (userAgent.includes('arm') || userAgent.includes('apple')) {
-        downloadUrl = 'https://github.com/samzong/GitHubNotifier/releases/latest/download/GitHubNotifier-arm64.dmg';
+        downloadUrl = 'https://github.com/samzong/branchlight/releases/latest/download/Branchlight-arm64.dmg';
       } else {
-        downloadUrl = 'https://github.com/samzong/GitHubNotifier/releases/latest/download/GitHubNotifier-x86_64.dmg';
+        downloadUrl = 'https://github.com/samzong/branchlight/releases/latest/download/Branchlight-x86_64.dmg';
       }
     } else {
       // other
-      window.open('https://github.com/samzong/GitHubNotifier/releases/latest', '_blank');
+      window.open('https://github.com/samzong/branchlight/releases/latest', '_blank');
       return;
     }
     window.location.href = downloadUrl;
