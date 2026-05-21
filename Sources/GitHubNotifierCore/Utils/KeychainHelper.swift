@@ -1,8 +1,10 @@
 import Foundation
+import LocalAuthentication
 import Security
 
 public final class KeychainHelper: Sendable {
     public static let shared = KeychainHelper()
+    private static let service = "com.samzong.GitHubNotifier.keychain"
 
     private init() {}
 
@@ -13,6 +15,7 @@ public final class KeychainHelper: Sendable {
 
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.service,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
@@ -23,11 +26,17 @@ public final class KeychainHelper: Sendable {
     }
 
     public func get(forKey key: String) -> String? {
+        let context = LAContext()
+        context.interactionNotAllowed = true
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.service,
             kSecAttrAccount as String: key,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecUseAuthenticationContext as String: context,
+            kSecUseAuthenticationUI as String: "u_AuthUIF",
         ]
 
         var dataTypeRef: AnyObject?
@@ -45,6 +54,7 @@ public final class KeychainHelper: Sendable {
     public func delete(forKey key: String) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.service,
             kSecAttrAccount as String: key,
         ]
 

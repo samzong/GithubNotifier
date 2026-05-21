@@ -9,88 +9,80 @@ struct AboutTab: View {
     private let repoName = "GitHubNotifier"
 
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer()
+        Form {
+            Section {
+                appIdentityRow
+            }
 
+            Section {
+                repoLink
+                issueLink
+            }
+
+            Section {
+                versionSection
+            }
+        }
+        .formStyle(.grouped)
+        .frame(width: settingsWidth)
+    }
+
+    private var appIdentityRow: some View {
+        HStack(spacing: 12) {
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 64, height: 64)
+                .frame(width: 44, height: 44)
 
-            Text("GitHubNotifier")
-                .font(.title)
-                .fontWeight(.bold)
-
-            Spacer().frame(height: 10)
-
-            linksSection
-
-            Divider()
-                .padding(.horizontal, 40)
-
-            versionSection
-
-            Spacer()
+            VStack(alignment: .leading, spacing: 3) {
+                Text("GitHubNotifier")
+                    .font(.headline)
+                Text("\(appVersion) (\(buildNumber))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
-        .frame(width: settingsWidth, height: 380)
+        .padding(.vertical, 4)
     }
 
-    private var linksSection: some View {
-        VStack(spacing: 12) {
-            Link(destination: URL(string: "https://github.com/\(repoOwner)/\(repoName)")!) {
-                HStack {
-                    Image(systemName: "link")
-                        .foregroundStyle(.blue)
-                    Text("about.github.repo".localized)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Text("\(repoOwner)/\(repoName)")
-                        .foregroundStyle(.blue)
-                    Image(systemName: "arrow.up.forward")
-                        .font(.caption)
-                        .foregroundStyle(.blue)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .cornerRadius(8)
+    private var repoLink: some View {
+        Link(destination: URL(string: "https://github.com/\(repoOwner)/\(repoName)")!) {
+            HStack {
+                Label("about.github.repo".localized, systemImage: "link")
+                Spacer()
+                Text("\(repoOwner)/\(repoName)")
+                    .foregroundStyle(.secondary)
+                Image(systemName: "arrow.up.forward")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
-            .buttonStyle(.plain)
-
-            Link(destination: URL(string: "https://github.com/\(repoOwner)/\(repoName)/issues/new")!) {
-                HStack {
-                    Image(systemName: "exclamationmark.bubble")
-                        .foregroundStyle(.blue)
-                    Text("about.report.issue".localized)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Image(systemName: "arrow.up.forward")
-                        .font(.caption)
-                        .foregroundStyle(.blue)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .cornerRadius(8)
-            }
-            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 40)
+        .buttonStyle(.plain)
+    }
+
+    private var issueLink: some View {
+        Link(destination: URL(string: "https://github.com/\(repoOwner)/\(repoName)/issues/new")!) {
+            HStack {
+                Label("about.report.issue".localized, systemImage: "exclamationmark.bubble")
+                Spacer()
+                Image(systemName: "arrow.up.forward")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var versionSection: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("about.version".localized)
-                Text("\(appVersion) (\(buildNumber))")
-                    .foregroundStyle(.secondary)
+        HStack {
+            Text("about.version".localized)
+            Text("\(appVersion) (\(buildNumber))")
+                .foregroundStyle(.secondary)
 
-                Spacer()
+            Spacer()
 
-                CheckForUpdatesView(updater: updater)
-            }
+            CheckForUpdatesView(updater: updater)
         }
-        .padding(.horizontal, 40)
     }
 
     private var appVersion: String {

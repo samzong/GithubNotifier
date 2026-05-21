@@ -6,7 +6,6 @@ struct AITab: View {
     var body: some View {
         ComingSoonView(
             icon: "sparkles",
-            iconColor: .purple,
             title: "settings.tab.ai".localized,
             settingsWidth: settingsWidth
         )

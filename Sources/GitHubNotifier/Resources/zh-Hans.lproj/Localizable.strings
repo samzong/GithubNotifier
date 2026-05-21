@@ -144,6 +144,32 @@
 "rules.empty.title" = "暂无规则";
 "rules.empty.subtitle" = "创建规则来自动过滤和管理通知";
 
+/* Search Management */
+"search.management.title" = "已保存搜索";
+"search.management.add" = "新建搜索";
+"search.management.name.placeholder" = "搜索名称";
+"search.management.type" = "类型:";
+"search.management.empty.title" = "暂无已保存搜索";
+"search.management.empty.description" = "创建已保存搜索来聚合 GitHub 结果。";
+"search.management.filter.placeholder" = "筛选已保存搜索";
+"search.management.no_matches" = "没有匹配项";
+"search.management.no_matches.description" = "尝试其他搜索名称、查询或类型。";
+"search.management.no_selection.title" = "未选择搜索";
+"search.management.no_selection.description" = "从侧边栏选择一个搜索，或新建一个搜索。";
+"search.management.preview" = "预览";
+"search.management.preview.results" = "预览结果";
+"search.management.preview.count" = "%d 项";
+"search.management.preview.empty.title" = "暂无预览";
+"search.management.preview.empty.description" = "点击“预览”测试查询。";
+"search.management.delete.title" = "删除搜索";
+"search.management.delete.message" = "确定要删除这个搜索吗？此操作无法撤销。";
+"search.management.pin" = "固定到标签页";
+"search.management.unpin" = "从标签页取消固定";
+"search.management.enable" = "启用";
+"search.management.disable" = "停用";
+"search.list.no_results.title" = "暂无结果";
+"search.list.no_results.description" = "已保存搜索没有返回结果。";
+
 /* Rule Editor */
 "rules.editor.new" = "新建规则";
 "rules.editor.edit" = "编辑规则";
@@ -180,4 +206,6 @@
 
 /* Common */
 "common.cancel" = "取消";
+"common.delete" = "删除";
+"common.edit" = "编辑";
 "common.save" = "保存";

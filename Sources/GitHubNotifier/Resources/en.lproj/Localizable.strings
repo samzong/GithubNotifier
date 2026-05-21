@@ -144,6 +144,32 @@
 "rules.empty.title" = "No Rules Yet";
 "rules.empty.subtitle" = "Create rules to automatically filter and manage your notifications";
 
+/* Search Management */
+"search.management.title" = "Saved Searches";
+"search.management.add" = "New Search";
+"search.management.name.placeholder" = "Search Name";
+"search.management.type" = "Type:";
+"search.management.empty.title" = "No Saved Searches";
+"search.management.empty.description" = "Create a saved search to aggregate GitHub results.";
+"search.management.filter.placeholder" = "Filter saved searches";
+"search.management.no_matches" = "No Matches";
+"search.management.no_matches.description" = "Try a different saved search name, query, or type.";
+"search.management.no_selection.title" = "No Search Selected";
+"search.management.no_selection.description" = "Select a search from the sidebar or create a new one.";
+"search.management.preview" = "Preview";
+"search.management.preview.results" = "Preview Results";
+"search.management.preview.count" = "%d items";
+"search.management.preview.empty.title" = "No Preview";
+"search.management.preview.empty.description" = "Click Preview to test the query.";
+"search.management.delete.title" = "Delete Search";
+"search.management.delete.message" = "Are you sure you want to delete this search? This action cannot be undone.";
+"search.management.pin" = "Pin to Tab";
+"search.management.unpin" = "Unpin from Tab";
+"search.management.enable" = "Enable";
+"search.management.disable" = "Disable";
+"search.list.no_results.title" = "No Results";
+"search.list.no_results.description" = "Your saved searches returned no results.";
+
 /* Rule Editor */
 "rules.editor.new" = "New Rule";
 "rules.editor.edit" = "Edit Rule";
@@ -180,4 +206,6 @@
 
 /* Common */
 "common.cancel" = "Cancel";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
 "common.save" = "Save";

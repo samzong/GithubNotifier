@@ -52,10 +52,9 @@ struct AccountTab: View {
         .frame(width: settingsWidth)
         .onAppear {
             Task {
-                let hasToken = await AuthStore.shared.currentToken() != nil
-                if hasToken, let user = notificationService.currentUser {
+                if notificationService.isAuthenticated, let user = notificationService.currentUser {
                     deviceFlowState = .success(username: user.login)
-                } else if hasToken {
+                } else if notificationService.isAuthenticated {
                     await notificationService.fetchCurrentUser()
                     if let user = notificationService.currentUser {
                         deviceFlowState = .success(username: user.login)
@@ -86,9 +85,9 @@ struct AccountTab: View {
     }
 
     @ViewBuilder private var webAuthIdleView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             Image(systemName: "person.badge.key.fill")
-                .font(.largeTitle)
+                .font(.title2)
                 .foregroundStyle(Color.accentColor)
 
             Text("account.webauth.description".localized)
@@ -102,7 +101,7 @@ struct AccountTab: View {
             .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
+        .padding(.vertical, 14)
     }
 
     @ViewBuilder private var webAuthRequestingView: some View {
@@ -128,7 +127,7 @@ struct AccountTab: View {
                 .tracking(4)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                .liquidGlassSurface(cornerRadius: 10)
 
             HStack(spacing: 8) {
                 Button("account.webauth.open_browser".localized) {
@@ -168,33 +167,35 @@ struct AccountTab: View {
     }
 
     @ViewBuilder private func webAuthSuccessView(username: String) -> some View {
-        VStack(spacing: 12) {
+        HStack(spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.largeTitle)
+                .font(.title3)
                 .foregroundStyle(.green)
 
-            Text("@\(username)")
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("@\(username)")
+                    .font(.headline)
 
-            Text("account.webauth.signed_in".localized)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 12) {
-                Button("account.webauth.signout".localized) {
-                    signOut()
-                }
-                .buttonStyle(.bordered)
-
-                if let url = URL(string: "https://github.com/settings/apps/authorizations") {
-                    Link("account.webauth.manage_apps".localized, destination: url)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text("account.webauth.signed_in".localized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+
+            Spacer()
+
+            if let url = URL(string: "https://github.com/settings/apps/authorizations") {
+                Link("account.webauth.manage_apps".localized, destination: url)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button("account.webauth.signout".localized) {
+                signOut()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
+        .padding(.vertical, 8)
     }
 
     @ViewBuilder private func webAuthErrorView(message: String) -> some View {

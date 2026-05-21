@@ -12,48 +12,44 @@ struct TabButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 4) {
+            ZStack(alignment: .topTrailing) {
                 Image(systemName: icon)
-                    .font(.system(size: 12))
-
-                if isSelected {
-                    Text(title)
-                        .font(.system(size: 12, weight: .medium))
-                        .transition(
-                            reduceMotion
-                                ? .opacity
-                                : .asymmetric(
-                                    insertion: .scale(scale: 0.8, anchor: .leading).combined(with: .opacity),
-                                    removal: .scale(scale: 0.8, anchor: .leading).combined(with: .opacity)
-                                )
-                        )
-                }
+                    .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
 
                 if showDot {
                     Circle()
                         .fill(Color.red)
                         .frame(width: 6, height: 6)
+                        .offset(x: 3, y: -3)
                 }
             }
-            .padding(.horizontal, isSelected ? 10 : 8)
-            .padding(.vertical, 6)
-            .background {
-                if isSelected, let namespace {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.accentColor.opacity(0.1))
-                        .matchedGeometryEffect(id: "activeTabBackground", in: namespace)
-                } else if isSelected {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.accentColor.opacity(0.1))
-                }
-            }
-            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .frame(width: 38, height: 32)
+            .background { selectedBackground }
+            .foregroundStyle(isSelected ? .primary : .secondary)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
+        .help(title)
+        .accessibilityLabel(Text(title))
         .animation(
             reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7),
             value: isSelected
         )
+    }
+
+    @ViewBuilder private var selectedBackground: some View {
+        if isSelected {
+            let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+
+            if let namespace {
+                shape
+                    .fill(Color.accentColor.opacity(0.2))
+                    .matchedGeometryEffect(id: "activeTabBackground", in: namespace)
+            } else {
+                shape
+                    .fill(Color.accentColor.opacity(0.2))
+            }
+        }
     }
 }

@@ -119,22 +119,14 @@ struct RulesTab: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "slider.horizontal.3")
-                .font(.system(size: 32))
-                .foregroundStyle(.tertiary)
-
-            Text("rules.empty.title".localized)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Text("rules.empty.subtitle".localized)
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-        }
+        PolishedEmptyStateView(
+            title: "rules.empty.title".localized,
+            message: "rules.empty.subtitle".localized,
+            systemImage: "slider.horizontal.3",
+            accent: .secondary
+        )
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .frame(height: 180)
     }
 }
 
@@ -217,30 +209,7 @@ struct RuleEditorView: View {
     @State private var actions: Set<RuleActionType> = []
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button("common.cancel".localized) {
-                    dismiss()
-                }
-
-                Spacer()
-
-                Text(editingRule == nil ? "rules.editor.new".localized : "rules.editor.edit".localized)
-                    .font(.headline)
-
-                Spacer()
-
-                Button("common.save".localized) {
-                    saveRule()
-                }
-                .disabled(name.isEmpty || conditions.isEmpty || actions.isEmpty)
-                .buttonStyle(.borderedProminent)
-            }
-            .padding()
-
-            Divider()
-
+        NavigationStack {
             Form {
                 Section {
                     TextField("rules.editor.name".localized, text: $name)
@@ -292,8 +261,29 @@ struct RuleEditorView: View {
                 }
             }
             .formStyle(.grouped)
+            .navigationTitle(editingRule == nil ? "rules.editor.new".localized : "rules.editor.edit".localized)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("common.cancel".localized) {
+                        dismiss()
+                    }
+                    .liquidGlassButtonStyle()
+                }
+
+                if #available(macOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .confirmationAction)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("common.save".localized) {
+                        saveRule()
+                    }
+                    .disabled(name.isEmpty || conditions.isEmpty || actions.isEmpty)
+                    .liquidGlassButtonStyle(prominent: true)
+                }
+            }
         }
-        .frame(width: 640, height: 540)
+        .frame(width: 560, height: 430)
         .onAppear {
             if let rule = editingRule {
                 name = rule.name

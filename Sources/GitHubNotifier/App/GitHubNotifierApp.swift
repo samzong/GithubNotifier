@@ -32,21 +32,13 @@ struct GitHubNotifierApp: App {
             userDriverDelegate: nil
         )
 
-        let oauthToken = KeychainHelper.shared.get(forKey: "github_oauth_access_token")
-        let token = oauthToken
-        let service = NotificationService(token: token)
+        let service = NotificationService()
         _notificationService = State(initialValue: service)
 
         let itemsService = ActivityService()
-        if let token {
-            itemsService.configure(token: token)
-        }
         _activityService = State(initialValue: itemsService)
 
         let search = SearchService()
-        if let token {
-            search.configure(token: token)
-        }
         _searchService = State(initialValue: search)
 
         // Create rule storage and inject into notification service
@@ -64,13 +56,18 @@ struct GitHubNotifierApp: App {
             }
         }
 
-        if token != nil {
-            Task { @MainActor in
-                await service.fetchCurrentUser()
-            }
-        }
+        Task { @MainActor in
+            if let token = await AuthStore.shared.currentToken() {
+                service.configure(token: token)
+                itemsService.configure(token: token)
+                search.configure(token: token)
 
-        Task {
+                await service.fetchCurrentUser()
+                await service.fetchNotifications()
+                await itemsService.fetchMyItems()
+                await search.fetchAll()
+            }
+
             await AuthStore.shared.cleanLegacyKeys()
         }
     }
@@ -92,11 +89,11 @@ struct GitHubNotifierApp: App {
                 updater: updaterController.updater,
                 oauthClientID: appConfiguration.githubOAuthClientID
             )
-                .environment(notificationService)
-                .environment(activityService)
-                .environment(searchService)
-                .environment(ruleStorage)
-                .environment(settingsNavigationState)
+            .environment(notificationService)
+            .environment(activityService)
+            .environment(searchService)
+            .environment(ruleStorage)
+            .environment(settingsNavigationState)
         }
 
         // Auxiliary windows (Search Management, future: Kanban, AI, etc.)
@@ -115,7 +112,7 @@ struct GitHubNotifierApp: App {
                     }
                 }
         }
-        .defaultSize(width: 720, height: 520)
+        .defaultSize(width: 800, height: 600)
         .handlesExternalEvents(matching: ["window"])
     }
 }

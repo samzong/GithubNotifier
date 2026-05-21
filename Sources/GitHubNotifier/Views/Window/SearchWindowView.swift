@@ -20,6 +20,7 @@ struct SearchWindowView: View {
     @State private var isNewSearch = false
     @State private var isEditing = false
     @State private var showDeleteConfirmation = false
+    @State private var sidebarSearchText = ""
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -36,6 +37,21 @@ struct SearchWindowView: View {
         return searchService.savedSearches.first { $0.id == id }
     }
 
+    private var isFilteringSidebar: Bool {
+        !sidebarSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var filteredSavedSearches: [SavedSearch] {
+        let searchText = sidebarSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !searchText.isEmpty else { return searchService.savedSearches }
+
+        return searchService.savedSearches.filter { search in
+            search.name.localizedStandardContains(searchText) ||
+                search.query.localizedStandardContains(searchText) ||
+                search.type.displayName.localizedStandardContains(searchText)
+        }
+    }
+
     var body: some View {
         NavigationSplitView {
             sidebar
@@ -44,7 +60,7 @@ struct SearchWindowView: View {
                 .toolbar {
                     ToolbarItem(placement: .navigation) {
                         if isEditing || isNewSearch {
-                            TextField("Search Name", text: $editingName)
+                            TextField("search.management.name.placeholder".localized, text: $editingName)
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 200)
                         } else if let search = currentSearch {
@@ -53,9 +69,9 @@ struct SearchWindowView: View {
                         }
                     }
 
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        if isEditing || isNewSearch {
-                            Button("Cancel") {
+                    if isEditing || isNewSearch {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("common.cancel".localized) {
                                 if isNewSearch {
                                     isNewSearch = false
                                     isEditing = false
@@ -63,42 +79,81 @@ struct SearchWindowView: View {
                                     loadSelectedSearch(selectedSearchId)
                                 }
                             }
-                            .buttonStyle(.bordered)
                             .foregroundStyle(.secondary)
+                            .liquidGlassButtonStyle()
+                        }
 
-                            Button("Save") { saveCurrentSearch() }
-                                .buttonStyle(.borderedProminent)
+                        if #available(macOS 26.0, *) {
+                            ToolbarSpacer(.fixed, placement: .primaryAction)
+                        }
+
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("common.save".localized) { saveCurrentSearch() }
+                                .liquidGlassButtonStyle(prominent: true)
                                 .disabled(editingName.isEmpty || editingQuery.isEmpty)
-                        } else if selectedSearchId != nil {
-                            Button("Edit") { isEditing = true }
-                                .buttonStyle(.borderedProminent)
-                                .tint(.blue)
-
-                            Button("Delete") {
-                                showDeleteConfirmation = true
+                        }
+                    } else {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button { createNewSearch() } label: {
+                                Label("search.management.add".localized, systemImage: "plus")
                             }
-                            .buttonStyle(.borderedProminent)
-                            .tint(.red)
+                            .help("search.management.add".localized)
+                        }
+
+                        if selectedSearchId != nil {
+                            if #available(macOS 26.0, *) {
+                                ToolbarSpacer(.fixed, placement: .primaryAction)
+                            }
+
+                            ToolbarItem(placement: .primaryAction) {
+                                Button {
+                                    isEditing = true
+                                } label: {
+                                    Label("common.edit".localized, systemImage: "pencil")
+                                }
+                                .liquidGlassButtonStyle(prominent: true)
+                            }
+
+                            if #available(macOS 26.0, *) {
+                                ToolbarSpacer(.fixed, placement: .primaryAction)
+                            }
+
+                            ToolbarItem(placement: .primaryAction) {
+                                Button(role: .destructive) {
+                                    showDeleteConfirmation = true
+                                } label: {
+                                    Label("common.delete".localized, systemImage: "trash")
+                                }
+                                .liquidGlassButtonStyle()
+                            }
                         }
                     }
                 }
         }
         .navigationSplitViewStyle(.balanced)
         .frame(minWidth: 800, minHeight: 600)
+        .liquidWindowBackground()
         .navigationTitle("")
+        .searchable(
+            text: $sidebarSearchText,
+            placement: .toolbar,
+            prompt: Text("search.management.filter.placeholder".localized)
+        )
+        .liquidSearchToolbarBehavior()
+        .liquidAutomaticScrollEdgeEffect(for: .top)
         .confirmationDialog(
-            "Delete Search",
+            "search.management.delete.title".localized,
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete", role: .destructive) {
+            Button("common.delete".localized, role: .destructive) {
                 if let id = selectedSearchId {
                     deleteSearch(id)
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button("common.cancel".localized, role: .cancel) {}
         } message: {
-            Text("Are you sure you want to delete this search? This action cannot be undone.")
+            Text("search.management.delete.message".localized)
         }
     }
 
@@ -106,39 +161,59 @@ struct SearchWindowView: View {
 
     @ViewBuilder private var sidebar: some View {
         List(selection: $selectedSearchId) {
-            ForEach(searchService.savedSearches) { search in
-                SearchSidebarRow(search: search)
-                    .tag(search.id)
-                    .contextMenu {
-                        Button(search.isPinned ? "Unpin from Tab" : "Pin to Tab") {
-                            searchService.updateSearch(
-                                id: search.id,
-                                options: .init(isPinned: !search.isPinned)
-                            )
+            if filteredSavedSearches.isEmpty {
+                sidebarEmptyView
+            } else {
+                ForEach(filteredSavedSearches) { search in
+                    SearchSidebarRow(search: search)
+                        .tag(search.id)
+                        .contextMenu {
+                            Button(search.isPinned ? "search.management.unpin".localized : "search.management.pin".localized) {
+                                searchService.updateSearch(
+                                    id: search.id,
+                                    options: .init(isPinned: !search.isPinned)
+                                )
+                            }
+                            Button(search.isEnabled ? "search.management.disable".localized : "search.management.enable".localized) {
+                                searchService.toggleSearch(id: search.id)
+                            }
+                            Divider()
+                            Button("common.delete".localized, role: .destructive) {
+                                deleteSearch(search.id)
+                            }
                         }
-                        Button(search.isEnabled ? "Disable" : "Enable") {
-                            searchService.toggleSearch(id: search.id)
-                        }
-                        Divider()
-                        Button("Delete", role: .destructive) {
-                            deleteSearch(search.id)
-                        }
-                    }
+                }
             }
         }
         .listStyle(.sidebar)
-        .navigationTitle("Saved Searches")
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button { createNewSearch() } label: {
-                    Image(systemName: "plus")
-                }
-                .help("Add new search")
-            }
-        }
+        .navigationTitle("search.management.title".localized)
+        .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 280)
         .onChange(of: selectedSearchId) { _, newId in
             loadSelectedSearch(newId)
         }
+    }
+
+    private var sidebarEmptyView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(
+                isFilteringSidebar
+                    ? "search.management.no_matches".localized
+                    : "search.management.empty.title".localized,
+                systemImage: "magnifyingglass"
+            )
+            .font(.callout.weight(.medium))
+
+            Text(
+                isFilteringSidebar
+                    ? "search.management.no_matches.description".localized
+                    : "search.management.empty.description".localized
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(3)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 8)
     }
 
     // MARK: - Detail View
@@ -147,11 +222,19 @@ struct SearchWindowView: View {
         if selectedSearchId != nil || isNewSearch {
             contentSection
         } else {
-            ContentUnavailableView(
-                "No Search Selected",
-                systemImage: "magnifyingglass",
-                description: Text("Select a search from the sidebar or create a new one.")
-            )
+            PolishedEmptyStateView(
+                title: "search.management.no_selection.title".localized,
+                message: "search.management.no_selection.description".localized,
+                systemImage: "magnifyingglass"
+            ) {
+                Button {
+                    createNewSearch()
+                } label: {
+                    Label("search.management.add".localized, systemImage: "plus")
+                }
+                .liquidGlassButtonStyle(prominent: true)
+                .controlSize(.small)
+            }
         }
     }
 
@@ -181,7 +264,7 @@ struct SearchWindowView: View {
         VStack(alignment: .leading, spacing: 12) {
             if isEditing || isNewSearch {
                 HStack {
-                    Text("Type:")
+                    Text("search.management.type".localized)
                         .foregroundStyle(.secondary)
                     Picker("", selection: $editingType) {
                         ForEach(SearchType.allCases) { type in
@@ -191,11 +274,12 @@ struct SearchWindowView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .controlSize(.small)
                     Spacer()
                 }
             } else if let search = currentSearch {
                 HStack {
-                    Text("Type:")
+                    Text("search.management.type".localized)
                         .foregroundStyle(.secondary)
                     Label(search.type.displayName, systemImage: search.type.icon)
                         .foregroundStyle(.primary)
@@ -209,24 +293,18 @@ struct SearchWindowView: View {
                         .scrollContentBackground(.hidden)
                         .padding(8)
                         .frame(minHeight: 60, maxHeight: 120)
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                        )
+                        .liquidGlassSurface(cornerRadius: 8, interactive: true)
                 } else if let search = currentSearch {
                     Text(search.query)
                         .font(.system(.body, design: .monospaced))
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(10)
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .liquidGlassSurface(cornerRadius: 8)
                 }
 
                 VStack(spacing: 8) {
-                    Button("Preview") {
+                    Button("search.management.preview".localized) {
                         if !isEditing, let search = currentSearch {
                             editingQuery = search.query
                             editingType = search.type
@@ -249,36 +327,35 @@ struct SearchWindowView: View {
     @ViewBuilder private var previewSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Preview Results")
+                Text("search.management.preview.results".localized)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                 Spacer()
                 if !previewResults.isEmpty || !previewRepositories.isEmpty {
-                    Text("\(previewResults.count + previewRepositories.count) items")
+                    Text(String(format: "search.management.preview.count".localized, previewResults.count + previewRepositories.count))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
             }
 
             if previewResults.isEmpty, previewRepositories.isEmpty {
-                ContentUnavailableView(
-                    "No Preview",
+                PolishedEmptyStateView(
+                    title: "search.management.preview.empty.title".localized,
+                    message: "search.management.preview.empty.description".localized,
                     systemImage: "doc.text.magnifyingglass",
-                    description: Text("Click Preview to test the query.")
+                    accent: .secondary
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if !previewRepositories.isEmpty {
                 List(previewRepositories) { repo in
                     RepositoryPreviewRow(repository: repo)
                 }
-                .listStyle(.plain)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .listStyle(.inset(alternatesRowBackgrounds: true))
             } else {
                 List(previewResults) { item in
                     SearchPreviewRow(item: item)
                 }
-                .listStyle(.plain)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .listStyle(.inset(alternatesRowBackgrounds: true))
             }
         }
         .frame(maxHeight: .infinity)
