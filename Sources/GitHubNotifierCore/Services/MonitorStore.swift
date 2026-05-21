@@ -14,6 +14,7 @@ public final class MonitorStore {
     public private(set) var monitors: [MonitorDefinition] = []
     public private(set) var events: [MonitorEvent] = []
     public private(set) var cursors: [UUID: String] = [:]
+    public private(set) var lastSyncedAt: [UUID: Date] = [:]
 
     private let defaults: UserDefaults
     private let keyPrefix: String
@@ -21,6 +22,14 @@ public final class MonitorStore {
     private var monitorsKey: String { "\(keyPrefix)monitor_definitions" }
     private var eventsKey: String { "\(keyPrefix)monitor_events" }
     private var cursorsKey: String { "\(keyPrefix)monitor_cursors" }
+    private var lastSyncedAtKey: String { "\(keyPrefix)monitor_last_synced_at" }
+
+    private func normalizedName(_ name: String?) -> String? {
+        guard let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
+    }
 
     public init(defaults: UserDefaults = .standard, keyPrefix: String = "") {
         self.defaults = defaults
@@ -45,9 +54,11 @@ public final class MonitorStore {
         monitors.removeAll { $0.id == id }
         events.removeAll { $0.targetId == id }
         cursors.removeValue(forKey: id)
+        lastSyncedAt.removeValue(forKey: id)
         saveMonitors()
         saveEvents()
         saveCursors()
+        saveLastSyncedAt()
     }
 
     /// Updates the enabled state of a monitor.
@@ -66,10 +77,45 @@ public final class MonitorStore {
         }
     }
 
+    /// Updates editable monitor metadata and clears stale state when the watched target changes.
+    @discardableResult
+    public func updateMonitorDetails(id: UUID, target: MonitorTarget, name: String?) -> Bool {
+        guard let index = monitors.firstIndex(where: { $0.id == id }) else {
+            return false
+        }
+
+        let targetId = target.idString
+        if monitors.contains(where: { $0.id != id && $0.target.idString == targetId }) {
+            return false
+        }
+
+        let targetChanged = monitors[index].target.idString != targetId
+        monitors[index].target = target
+        monitors[index].name = normalizedName(name)
+        saveMonitors()
+
+        if targetChanged {
+            events.removeAll { $0.targetId == id }
+            cursors.removeValue(forKey: id)
+            lastSyncedAt.removeValue(forKey: id)
+            saveEvents()
+            saveCursors()
+            saveLastSyncedAt()
+        }
+
+        return true
+    }
+
     /// Saves the sync cursor/checkpoint for a given monitor.
     public func saveCursor(_ cursor: String, forMonitorId monitorId: UUID) {
         cursors[monitorId] = cursor
         saveCursors()
+    }
+
+    /// Records the time a monitor sync request completed successfully.
+    public func recordSync(forMonitorId monitorId: UUID, at date: Date = Date()) {
+        lastSyncedAt[monitorId] = date
+        saveLastSyncedAt()
     }
 
     /// Appends new events, filtering duplicates.
@@ -159,6 +205,12 @@ public final class MonitorStore {
         saveEvents()
     }
 
+    /// Clears events collected for a single monitor.
+    public func clearEvents(forMonitorId monitorId: UUID) {
+        events.removeAll { $0.targetId == monitorId }
+        saveEvents()
+    }
+
     // MARK: - Persistence
 
     private func saveMonitors() {
@@ -180,6 +232,13 @@ public final class MonitorStore {
         }
     }
 
+    private func saveLastSyncedAt() {
+        let stringKeyed = Dictionary(uniqueKeysWithValues: lastSyncedAt.map { ($0.key.uuidString, $0.value) })
+        if let data = try? JSONEncoder().encode(stringKeyed) {
+            defaults.set(data, forKey: lastSyncedAtKey)
+        }
+    }
+
     private func loadFromStorage() {
         if let data = defaults.data(forKey: monitorsKey),
            let decoded = try? JSONDecoder().decode([MonitorDefinition].self, from: data) {
@@ -195,6 +254,14 @@ public final class MonitorStore {
         if let data = defaults.data(forKey: cursorsKey),
            let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
             self.cursors = Dictionary(uniqueKeysWithValues: decoded.compactMap { item in
+                guard let uuid = UUID(uuidString: item.key) else { return nil }
+                return (uuid, item.value)
+            })
+        }
+
+        if let data = defaults.data(forKey: lastSyncedAtKey),
+           let decoded = try? JSONDecoder().decode([String: Date].self, from: data) {
+            self.lastSyncedAt = Dictionary(uniqueKeysWithValues: decoded.compactMap { item in
                 guard let uuid = UUID(uuidString: item.key) else { return nil }
                 return (uuid, item.value)
             })

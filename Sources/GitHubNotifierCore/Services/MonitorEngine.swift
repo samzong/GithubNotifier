@@ -14,15 +14,22 @@ import Observation
 public final class MonitorEngine {
     private let session: GitHubSession
     private let store: MonitorStore
-    private let notificationManager: NotificationManager
+    private let notificationManager: NotificationManager?
+    private let sourceFactory: @MainActor (MonitorTarget) -> MonitorSource?
 
     private var timer: Task<Void, Never>?
     public private(set) var isSyncing = false
 
-    public init(session: GitHubSession, store: MonitorStore, notificationManager: NotificationManager) {
+    public init(
+        session: GitHubSession,
+        store: MonitorStore,
+        notificationManager: NotificationManager? = nil,
+        sourceFactory: (@MainActor (MonitorTarget) -> MonitorSource?)? = nil
+    ) {
         self.session = session
         self.store = store
         self.notificationManager = notificationManager
+        self.sourceFactory = sourceFactory ?? Self.defaultSource(for:)
     }
 
     /// Starts background polling with the specified interval.
@@ -60,6 +67,7 @@ public final class MonitorEngine {
 
     /// Synchronizes a single monitor.
     public func sync(monitor: MonitorDefinition) async {
+        guard session.isAuthenticated else { return }
         guard let source = makeSource(for: monitor.target) else { return }
 
         let cursor = store.cursors[monitor.id]
@@ -72,6 +80,7 @@ public final class MonitorEngine {
                 session: session
             )
             store.repairEvents(using: fetchedEvents)
+            store.recordSync(forMonitorId: monitor.id)
 
             if let nextCursor {
                 store.saveCursor(nextCursor, forMonitorId: monitor.id)
@@ -79,21 +88,27 @@ public final class MonitorEngine {
 
             if isFirstSync {
                 // Baseline-first: initialize checkpoint without triggering notifications
-                print("Baseline initialized for \(monitor.target.displayName)")
+                print("Baseline initialized for \(monitor.displayName)")
             } else {
                 if !events.isEmpty {
                     store.addEvents(events)
-                    for event in events {
-                        await notificationManager.sendMonitorNotification(for: event)
+                    if let notificationManager {
+                        for event in events {
+                            await notificationManager.sendMonitorNotification(for: event)
+                        }
                     }
                 }
             }
         } catch {
-            print("Failed to sync monitor \(monitor.target.displayName): \(error)")
+            print("Failed to sync monitor \(monitor.displayName): \(error)")
         }
     }
 
     private func makeSource(for target: MonitorTarget) -> MonitorSource? {
+        sourceFactory(target)
+    }
+
+    private static func defaultSource(for target: MonitorTarget) -> MonitorSource? {
         switch target {
         case .account:
             AccountEventsMonitorSource()

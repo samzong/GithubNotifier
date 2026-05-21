@@ -17,6 +17,13 @@ struct MonitorWindowView: View {
     @State private var selectedMonitorId: UUID?
     @State private var sidebarSearchText = ""
     @State private var showDeleteConfirmation = false
+    @State private var syncingMonitorIds: Set<UUID> = []
+    @State private var isEditingMonitor = false
+    @State private var editMonitorType: MonitorType = .account
+    @State private var editMonitorInput = ""
+    @State private var editMonitorName = ""
+    @State private var editMonitorError: String?
+    @State private var isValidatingEditedMonitor = false
 
     @State private var isShowingAddPopover = false
     @State private var newMonitorType: MonitorType = .account
@@ -62,7 +69,7 @@ struct MonitorWindowView: View {
         let text = sidebarSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return store.monitors }
         return store.monitors.filter {
-            $0.target.displayName.localizedStandardContains(text) ||
+            $0.displayName.localizedStandardContains(text) ||
                 $0.target.idString.localizedStandardContains(text)
         }
     }
@@ -90,7 +97,13 @@ struct MonitorWindowView: View {
             }
             Button("common.cancel".localized, role: .cancel) {}
         } message: {
-            Text("monitor.management.delete.message".localized)
+            Text(String(
+                format: "monitor.management.delete.message".localized,
+                currentMonitor?.displayName ?? "monitor.management.delete.fallback".localized
+            ))
+        }
+        .onChange(of: selectedMonitorId) { _, _ in
+            cancelMonitorEditing()
         }
     }
 
@@ -104,7 +117,7 @@ struct MonitorWindowView: View {
                             .imageScale(.medium)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(monitor.target.displayName)
+                            Text(monitor.displayName)
                                 .font(.body)
                                 .lineLimit(1)
                             Text(typeLabelForTarget(monitor.target))
@@ -123,6 +136,12 @@ struct MonitorWindowView: View {
                         .labelsHidden()
                     }
                     .padding(.vertical, 4)
+                    .contextMenu {
+                        Button("common.delete".localized, role: .destructive) {
+                            selectedMonitorId = monitor.id
+                            showDeleteConfirmation = true
+                        }
+                    }
                 }
             }
         }
@@ -151,7 +170,9 @@ struct MonitorWindowView: View {
             .background(.ultraThinMaterial)
         }
     }
+}
 
+extension MonitorWindowView {
     private var addMonitorView: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
@@ -258,11 +279,28 @@ struct MonitorWindowView: View {
         }
     }
 
+    private var editTargetPlaceholder: String {
+        switch editMonitorType {
+        case .account:
+            "monitor.management.add.account.placeholder".localized
+        case .repository:
+            "monitor.management.add.repo.placeholder".localized
+        case .search:
+            "monitor.management.add.search.placeholder".localized
+        case .code:
+            "monitor.management.add.code.placeholder".localized
+        }
+    }
+
     private var isAddFormValid: Bool {
         if newMonitorType == .search, selectedSavedSearchId != nil {
             return true
         }
         return !newMonitorInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var isEditFormValid: Bool {
+        !editMonitorInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func resetAddForm() {
@@ -273,8 +311,67 @@ struct MonitorWindowView: View {
         isValidatingNewMonitor = false
     }
 
+    private func normalizedMonitorName(_ name: String) -> String? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
     private func parseTarget(input: String, type: MonitorType) -> MonitorTarget? {
         MonitorTarget.parse(input: input, type: type.rawValue, name: newMonitorName)
+    }
+
+    private func parseTarget(input: String, type: MonitorType, name: String) -> MonitorTarget? {
+        MonitorTarget.parse(input: input, type: type.rawValue, name: name)
+    }
+
+    private func startEditing(_ monitor: MonitorDefinition) {
+        isEditingMonitor = true
+        editMonitorType = monitorType(for: monitor.target)
+        editMonitorInput = inputValue(for: monitor.target)
+        editMonitorName = monitor.name ?? embeddedName(for: monitor.target) ?? ""
+        editMonitorError = nil
+        isValidatingEditedMonitor = false
+    }
+
+    private func cancelMonitorEditing() {
+        isEditingMonitor = false
+        editMonitorInput = ""
+        editMonitorName = ""
+        editMonitorError = nil
+        isValidatingEditedMonitor = false
+    }
+
+    private func monitorType(for target: MonitorTarget) -> MonitorType {
+        switch target {
+        case .account:
+            .account
+        case .repository:
+            .repository
+        case .search:
+            .search
+        case .code:
+            .code
+        }
+    }
+
+    private func inputValue(for target: MonitorTarget) -> String {
+        switch target {
+        case let .account(login):
+            login
+        case let .repository(owner, name):
+            "\(owner)/\(name)"
+        case let .search(query, _), let .code(query, _):
+            query
+        }
+    }
+
+    private func embeddedName(for target: MonitorTarget) -> String? {
+        switch target {
+        case let .search(_, name), let .code(_, name):
+            name
+        case .account, .repository:
+            nil
+        }
     }
 
     @MainActor
@@ -287,7 +384,8 @@ struct MonitorWindowView: View {
         isValidatingNewMonitor = true
         defer { isValidatingNewMonitor = false }
 
-        guard await validateTarget(target) else {
+        if let error = await targetValidationError(for: target) {
+            addMonitorError = error
             return
         }
 
@@ -302,6 +400,7 @@ struct MonitorWindowView: View {
 
         let definition = MonitorDefinition(
             target: target,
+            name: normalizedMonitorName(newMonitorName),
             isEnabled: true,
             eventToggles: defaultToggles
         )
@@ -318,35 +417,68 @@ struct MonitorWindowView: View {
     }
 
     @MainActor
-    private func validateTarget(_ target: MonitorTarget) async -> Bool {
+    private func saveEditedMonitor() async {
+        guard let monitor = currentMonitor else { return }
+        guard let target = parseTarget(input: editMonitorInput, type: editMonitorType, name: editMonitorName) else {
+            editMonitorError = "monitor.management.error.invalid_target".localized
+            return
+        }
+
+        isValidatingEditedMonitor = true
+        defer { isValidatingEditedMonitor = false }
+
+        let targetChanged = monitor.target.idString != target.idString
+        if targetChanged, let error = await targetValidationError(for: target) {
+            editMonitorError = error
+            return
+        }
+
+        guard store.updateMonitorDetails(id: monitor.id, target: target, name: normalizedMonitorName(editMonitorName)) else {
+            editMonitorError = "monitor.management.error.duplicate".localized
+            return
+        }
+
+        isEditingMonitor = false
+        editMonitorError = nil
+
+        if targetChanged, let updatedMonitor = store.monitors.first(where: { $0.id == monitor.id }) {
+            await engine.sync(monitor: updatedMonitor)
+        }
+    }
+
+    @MainActor
+    private func syncMonitor(_ monitor: MonitorDefinition) async {
+        guard !syncingMonitorIds.contains(monitor.id) else { return }
+
+        syncingMonitorIds.insert(monitor.id)
+        defer { syncingMonitorIds.remove(monitor.id) }
+
+        await engine.sync(monitor: monitor)
+    }
+
+    @MainActor
+    private func targetValidationError(for target: MonitorTarget) async -> String? {
         switch target {
         case let .account(login):
             guard let restClient = session.restClient else {
-                addMonitorError = "monitor.management.error.not_authenticated".localized
-                return false
+                return "monitor.management.error.not_authenticated".localized
             }
             if await restClient.userExists(username: login) {
-                addMonitorError = nil
-                return true
+                return nil
             }
-            addMonitorError = String(format: "monitor.management.error.account_not_found".localized, login)
-            return false
+            return String(format: "monitor.management.error.account_not_found".localized, login)
 
         case let .repository(owner, name):
             guard let restClient = session.restClient else {
-                addMonitorError = "monitor.management.error.not_authenticated".localized
-                return false
+                return "monitor.management.error.not_authenticated".localized
             }
             if await restClient.repositoryExists(owner: owner, repo: name) {
-                addMonitorError = nil
-                return true
+                return nil
             }
-            addMonitorError = String(format: "monitor.management.error.repo_not_found".localized, "\(owner)/\(name)")
-            return false
+            return String(format: "monitor.management.error.repo_not_found".localized, "\(owner)/\(name)")
 
         case .search, .code:
-            addMonitorError = nil
-            return true
+            return nil
         }
     }
 
@@ -355,30 +487,15 @@ struct MonitorWindowView: View {
             if let monitor = currentMonitor {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        headerCard(for: monitor)
-                        filterCard(for: monitor)
-                        eventsCard(for: monitor)
+                        if isEditingMonitor {
+                            editMonitorCard(for: monitor)
+                        } else {
+                            headerCard(for: monitor)
+                            filterCard(for: monitor)
+                            dangerZone(for: monitor)
+                        }
                     }
                     .padding()
-                }
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            Task {
-                                await engine.sync(monitor: monitor)
-                            }
-                        } label: {
-                            Label("monitor.management.sync_now".localized, systemImage: "arrow.triangle.2.circlepath")
-                        }
-                    }
-
-                    ToolbarItem(placement: .primaryAction) {
-                        Button(role: .destructive) {
-                            showDeleteConfirmation = true
-                        } label: {
-                            Label("common.delete".localized, systemImage: "trash")
-                        }
-                    }
                 }
             } else {
                 emptyStateView
@@ -400,6 +517,89 @@ struct MonitorWindowView: View {
     }
 
     @ViewBuilder
+    private func editMonitorCard(for monitor: MonitorDefinition) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Image(systemName: "pencil")
+                    .font(.title3)
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 32, height: 32)
+                    .liquidGlassSurface(cornerRadius: 10, interactive: true, tint: Color.accentColor.opacity(0.08))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("monitor.management.edit.title".localized)
+                        .font(.headline)
+                    Text("monitor.management.edit.subtitle".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                AddMonitorFieldLabel("monitor.management.add.type.label".localized)
+                Picker("", selection: $editMonitorType) {
+                    ForEach(MonitorType.allCases) { type in
+                        Label(type.displayName, systemImage: type.icon)
+                            .tag(type)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                AddMonitorFieldLabel("monitor.management.add.target.label".localized)
+                TextField(editTargetPlaceholder, text: $editMonitorInput)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                AddMonitorFieldLabel("monitor.management.add.name.label".localized)
+                TextField("monitor.management.add.name.placeholder".localized, text: $editMonitorName)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            if monitor.target.idString != parseTarget(input: editMonitorInput, type: editMonitorType, name: editMonitorName)?.idString {
+                Label("monitor.management.edit.target_change_note".localized, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let editMonitorError {
+                Text(editMonitorError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack {
+                Button("common.cancel".localized) {
+                    cancelMonitorEditing()
+                }
+                .buttonStyle(.borderless)
+
+                Spacer()
+
+                if isValidatingEditedMonitor {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+
+                Button("common.save".localized) {
+                    Task {
+                        await saveEditedMonitor()
+                    }
+                }
+                .liquidGlassButtonStyle(prominent: true)
+                .disabled(!isEditFormValid || isValidatingEditedMonitor)
+            }
+        }
+        .padding()
+        .liquidGlassSurface()
+    }
+
+    @ViewBuilder
     private func headerCard(for monitor: MonitorDefinition) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -408,7 +608,7 @@ struct MonitorWindowView: View {
                     .foregroundStyle(Color.accentColor)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(monitor.target.displayName)
+                    Text(monitor.displayName)
                         .font(.title2)
                         .fontWeight(.bold)
 
@@ -417,6 +617,32 @@ struct MonitorWindowView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+
+                HStack(spacing: 8) {
+                    if syncingMonitorIds.contains(monitor.id) {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+
+                    Button {
+                        Task {
+                            await syncMonitor(monitor)
+                        }
+                    } label: {
+                        Label("monitor.management.sync_now".localized, systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .controlSize(.small)
+                    .liquidGlassButtonStyle()
+                    .disabled(syncingMonitorIds.contains(monitor.id))
+                }
+
+                Button {
+                    startEditing(monitor)
+                } label: {
+                    Label("common.edit".localized, systemImage: "pencil")
+                }
+                .controlSize(.small)
+                .liquidGlassButtonStyle()
             }
 
             Divider()
@@ -437,13 +663,12 @@ struct MonitorWindowView: View {
                 }
 
                 GridRow {
-                    Text("monitor.management.cursor.label".localized)
+                    Text("monitor.management.last_synced.label".localized)
                         .foregroundStyle(.secondary)
-                    if let cursor = store.cursors[monitor.id] {
-                        Text(cursor.prefix(30) + (cursor.count > 30 ? "..." : ""))
-                            .font(.system(.body, design: .monospaced))
+                    if let lastSyncedAt = store.lastSyncedAt[monitor.id] {
+                        Text(lastSyncedAt.timeAgo())
                     } else {
-                        Text("monitor.management.cursor.never_synced".localized)
+                        Text("monitor.management.last_synced.never".localized)
                             .italic()
                             .foregroundStyle(.secondary)
                     }
@@ -499,89 +724,31 @@ struct MonitorWindowView: View {
         }
     }
 
-    private func eventsCard(for monitor: MonitorDefinition) -> some View {
-        let events = store.events.filter { $0.targetId == monitor.id }
+    @ViewBuilder
+    private func dangerZone(for monitor: MonitorDefinition) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("monitor.management.danger.title".localized)
+                .font(.headline)
 
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("monitor.management.events.title".localized)
-                    .font(.headline)
-                Spacer()
-                Text(String(format: "monitor.management.events.count".localized, events.count))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Text("monitor.management.danger.description".localized)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Button(role: .destructive) {
+                selectedMonitorId = monitor.id
+                showDeleteConfirmation = true
+            } label: {
+                Label("monitor.management.delete.button".localized, systemImage: "trash")
             }
-
-            Divider()
-
-            if events.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "circle.dashed")
-                        .font(.system(size: 32))
-                        .foregroundStyle(.secondary)
-                    Text("monitor.management.events.empty".localized)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 30)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(events) { event in
-                        eventRow(for: event)
-                        if event.id != events.last?.id {
-                            Divider()
-                                .padding(.leading, 40)
-                        }
-                    }
-                }
-            }
+            .controlSize(.small)
+            .liquidGlassButtonStyle()
         }
         .padding()
-        .liquidGlassSurface()
+        .liquidGlassSurface(tint: Color.red.opacity(0.04))
     }
+}
 
-    @ViewBuilder
-    private func eventRow(for event: MonitorEvent) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: iconForEventKind(event.kind))
-                .font(.system(size: 16))
-                .foregroundStyle(colorForEventKind(event.kind))
-                .frame(width: 28, height: 28)
-                .background(colorForEventKind(event.kind).opacity(0.12))
-                .clipShape(Circle())
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    if !event.actor.isEmpty {
-                        Text("@\(event.actor)")
-                            .fontWeight(.semibold)
-                    }
-                    Text(event.repo)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(event.occurredAt.timeAgo())
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .font(.subheadline)
-
-                Text(event.title)
-                    .font(.body)
-                    .foregroundStyle(event.isRead ? .secondary : .primary)
-                    .fontWeight(event.isRead ? .regular : .medium)
-            }
-        }
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            store.markEventRead(id: event.id)
-            if let url = URL(string: event.url) {
-                NSWorkspace.shared.open(url)
-            }
-        }
-    }
-
+extension MonitorWindowView {
     private func iconForTarget(_ target: MonitorTarget) -> String {
         switch target {
         case .account: "person.crop.circle"
@@ -597,30 +764,6 @@ struct MonitorWindowView: View {
         case .repository: "monitor.management.type.repo".localized
         case .search: "monitor.management.type.search".localized
         case .code: "monitor.management.type.code".localized
-        }
-    }
-
-    private func iconForEventKind(_ kind: String) -> String {
-        switch kind {
-        case "commit": "arrow.triangle.pull"
-        case "issue": "exclamationmark.bubble"
-        case "pr": "arrow.triangle.merge"
-        case "release": "shippingbox"
-        case "comment": "text.bubble"
-        case "code_match": "doc.text.magnifyingglass"
-        default: "bell"
-        }
-    }
-
-    private func colorForEventKind(_ kind: String) -> Color {
-        switch kind {
-        case "commit": .blue
-        case "issue": .green
-        case "pr": .purple
-        case "release": .orange
-        case "comment": .teal
-        case "code_match": .cyan
-        default: .secondary
         }
     }
 }

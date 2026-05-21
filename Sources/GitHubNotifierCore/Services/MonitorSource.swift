@@ -207,13 +207,13 @@ private func monitorEvent(from event: GitHubEvent, definition: MonitorDefinition
     )
 }
 
-private func rawEventsSinceCursor(_ rawEvents: [GitHubEvent], cursor: String?) -> (events: [GitHubEvent], nextCursor: String?) {
+func rawEventsSinceCursor(_ rawEvents: [GitHubEvent], cursor: String?) -> (events: [GitHubEvent], nextCursor: String?) {
     let nextCursor = rawEvents.first?.id ?? cursor
     guard let cursor else {
         return (rawEvents, nextCursor)
     }
     guard let cursorIndex = rawEvents.firstIndex(where: { $0.id == cursor }) else {
-        return ([], nextCursor)
+        return (rawEvents, nextCursor)
     }
     return (Array(rawEvents.prefix(upTo: cursorIndex)), nextCursor)
 }
