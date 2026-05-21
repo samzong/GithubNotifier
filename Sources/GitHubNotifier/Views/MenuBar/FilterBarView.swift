@@ -7,14 +7,19 @@ struct FilterBarView: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            Picker("", selection: $selectedFilter) {
                 ForEach(availableFilters, id: \.self) { filter in
-                    filterButton(filter)
+                    Text(filterTitle(filter))
+                        .tag(filter)
                 }
             }
-            .padding(.horizontal, 16)
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.mini)
+            .fixedSize()
+            .padding(.horizontal, 12)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
     }
 
     private var availableFilters: [ActivityFilter] {
@@ -30,34 +35,13 @@ struct FilterBarView: View {
         }
     }
 
-    private func filterButton(_ filter: ActivityFilter) -> some View {
-        let isSelected = selectedFilter == filter
+    private func filterTitle(_ filter: ActivityFilter) -> String {
         let count = filterCounts[filter] ?? 0
 
-        return Button {
-            selectedFilter = filter
-        } label: {
-            HStack(spacing: 4) {
-                Text(filter.displayName)
-                    .font(.caption.weight(.medium))
-
-                if count > 0 {
-                    Text("(\(count))")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(
-                isSelected
-                    ? Color.accentColor.opacity(0.15)
-                    : Color(nsColor: .controlBackgroundColor)
-            )
-            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+        if count > 0 {
+            return "\(filter.displayName) (\(count))"
         }
-        .buttonStyle(.plain)
+        return filter.displayName
     }
 }
 

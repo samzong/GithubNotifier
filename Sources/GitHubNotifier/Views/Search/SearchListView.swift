@@ -157,24 +157,26 @@ struct SearchListView: View {
     // MARK: - Empty States
 
     @ViewBuilder private var emptyStateNoSearches: some View {
-        ContentUnavailableView {
-            Label("No Saved Searches", systemImage: "magnifyingglass")
-        } description: {
-            Text("Create saved searches to aggregate results here.")
-        } actions: {
+        PolishedEmptyStateView(
+            title: "search.management.empty.title".localized,
+            message: "search.management.empty.description".localized,
+            systemImage: "magnifyingglass"
+        ) {
             Button("Manage Searches") {
                 WindowManager.shared.activeWindow = .searchManagement
                 openWindow(id: "auxiliary")
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.small)
         }
     }
 
     @ViewBuilder private var emptyStateNoResults: some View {
-        ContentUnavailableView(
-            "No Results",
+        PolishedEmptyStateView(
+            title: "search.list.no_results.title".localized,
+            message: "search.list.no_results.description".localized,
             systemImage: "tray",
-            description: Text("Your saved searches returned no results.")
+            accent: .secondary
         )
     }
 

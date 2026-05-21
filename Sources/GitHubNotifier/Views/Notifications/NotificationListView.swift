@@ -58,30 +58,21 @@ struct NotificationListView: View {
     }
 
     private func errorView(_ error: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.title2)
-                .foregroundStyle(.orange)
-            Text(error)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
+        PolishedEmptyStateView(
+            title: "menubar.error.title".localized,
+            message: error,
+            systemImage: "exclamationmark.triangle",
+            accent: .orange
+        )
     }
 
     private var emptyView: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "tray")
-                .font(.title2)
-                .foregroundStyle(.secondary)
-            Text("menubar.no_items".localized)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
+        PolishedEmptyStateView(
+            title: "menubar.no_items".localized,
+            message: "menubar.empty.subtitle".localized,
+            systemImage: "tray",
+            accent: .secondary
+        )
     }
 
     private var filteredGroups: [NotificationGroup] {

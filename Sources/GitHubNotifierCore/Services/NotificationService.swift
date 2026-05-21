@@ -7,6 +7,7 @@ public class NotificationService {
     public var currentUser: GitHubGraphQLClient.ViewerInfo?
     public var isLoading = false
     public var errorMessage: String?
+    public private(set) var isAuthenticated = false
 
     public var unreadCount: Int { notifications.count }
 
@@ -28,8 +29,9 @@ public class NotificationService {
         if let token {
             self.restClient = GitHubAPI(token: token)
             self.graphqlClient = GitHubGraphQLClient(token: token)
+            self.isAuthenticated = true
+            startAutoRefreshIfNeeded()
         }
-        startAutoRefreshIfNeeded()
     }
 
     deinit {
@@ -49,6 +51,7 @@ public class NotificationService {
     public func configure(token: String) {
         self.restClient = GitHubAPI(token: token)
         self.graphqlClient = GitHubGraphQLClient(token: token)
+        isAuthenticated = true
         startAutoRefreshIfNeeded()
     }
 
@@ -57,6 +60,7 @@ public class NotificationService {
         initialFetchTask?.cancel()
         restClient = nil
         graphqlClient = nil
+        isAuthenticated = false
         notifications = []
         errorMessage = nil
         isLoading = false
