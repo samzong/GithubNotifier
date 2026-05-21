@@ -38,6 +38,7 @@
 "settings.menubar.tabs.notifications" = "Show Notifications tab";
 "settings.menubar.tabs.activity" = "Show Activities tab";
 "settings.menubar.tabs.search" = "Show Search tab";
+"settings.menubar.tabs.watching" = "Show Watching tab";
 "settings.menubar.tabs.description" = "Choose which tabs appear in the menu bar window. Changes apply after restarting the app.";
 "settings.menubar.tabs.minimum_one" = "At least one tab must remain enabled.";
 
@@ -68,6 +69,9 @@
 "menubar.tab.notifications" = "Notifications";
 "menubar.tab.activity" = "Activities";
 "menubar.tab.search" = "Search";
+"menubar.tab.watching" = "Watching";
+"menubar.watching.empty.title" = "No monitors added yet.";
+"menubar.watching.empty.description" = "Monitor users, repositories, searches, or code keywords and get local notifications.";
 "menubar.no_items" = "No items found";
 "menubar.filter.all" = "All";
 "menubar.filter.created" = "Created";
@@ -132,6 +136,7 @@
 /* Summary Notification */
 "notification.summary.title" = "More GitHub Notifications";
 "notification.summary.body" = "You have %d more unread notifications";
+"notification.monitor.title" = "Monitor: %@";
 
 /* Test Notification */
 "notification.test.title" = "🎉 Test Notification";
@@ -209,3 +214,52 @@
 "common.delete" = "Delete";
 "common.edit" = "Edit";
 "common.save" = "Save";
+
+/* Monitor Management */
+"monitor.management.title" = "Manage Monitors";
+"monitor.management.add" = "Add Monitor";
+"monitor.management.filter.placeholder" = "Filter monitors...";
+"monitor.management.empty" = "No Monitor Selected";
+"monitor.management.empty.subtitle" = "Select a monitor from the sidebar or add a new one to begin tracking GitHub events.";
+"monitor.management.delete.title" = "Delete Monitor";
+"monitor.management.delete.message" = "Are you sure you want to delete this monitor? All collected events and sync states will be removed.";
+"monitor.management.type.account" = "Account";
+"monitor.management.type.repo" = "Repository";
+"monitor.management.type.search" = "Saved Search";
+"monitor.management.type.code" = "Code Keyword";
+"monitor.management.target.label" = "Target:";
+"monitor.management.status.label" = "Status:";
+"monitor.management.cursor.label" = "Last Checkpoint:";
+"monitor.management.events.title" = "Triggered Events";
+"monitor.management.events.count" = "%d items";
+"monitor.management.events.empty" = "No events recorded yet.";
+"monitor.management.add.title" = "Add New Monitor";
+"monitor.management.add.subtitle" = "Choose a GitHub target and what Branchlight should watch.";
+"monitor.management.add.name.placeholder" = "Display Name";
+"monitor.management.add.input.placeholder" = "URL, @username, owner/repo, or query";
+"monitor.management.add.type.label" = "Monitor Type";
+"monitor.management.add.target.label" = "Target";
+"monitor.management.add.account.placeholder" = "@username or profile URL";
+"monitor.management.add.repo.placeholder" = "owner/repo or repository URL";
+"monitor.management.add.search.placeholder" = "Issue or pull request search query";
+"monitor.management.add.code.placeholder" = "Code search query";
+"monitor.management.add.name.label" = "Display Name";
+"monitor.management.saved_search.label" = "Saved Search";
+"monitor.management.saved_search.placeholder" = "-- Select a Search --";
+"monitor.management.sync_now" = "Sync Now";
+"monitor.management.status.enabled" = "Enabled";
+"monitor.management.status.disabled" = "Disabled";
+"monitor.management.cursor.never_synced" = "Never Synced";
+"monitor.management.filters.title" = "Event Filters";
+"monitor.management.filters.description" = "Select which activities should trigger system notifications.";
+"monitor.management.error.invalid_target" = "Enter a valid monitor target.";
+"monitor.management.error.not_authenticated" = "Sign in before adding monitors.";
+"monitor.management.error.duplicate" = "A monitor for this target already exists.";
+"monitor.management.error.account_not_found" = "GitHub account \"%@\" was not found.";
+"monitor.management.error.repo_not_found" = "GitHub repository \"%@\" was not found.";
+"monitor.event.kind.commits" = "Commits";
+"monitor.event.kind.issues" = "Issues";
+"monitor.event.kind.prs" = "Pull Requests";
+"monitor.event.kind.releases" = "Releases";
+"monitor.event.kind.comments" = "Comments";
+"monitor.event.kind.activity" = "Other Activity";

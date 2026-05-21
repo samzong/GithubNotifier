@@ -21,18 +21,17 @@ public class SearchService {
 
     // MARK: - Private
 
-    private var graphqlClient: GitHubGraphQLClient?
+    private let session: GitHubSession
     private let storageKey = "savedSearches"
 
     @ObservationIgnored private nonisolated(unsafe) var autoRefreshTask: Task<Void, Never>?
-    private var previousItemIds: Set<String> = []
-    private var previousRepositoryIds: Set<String> = []
 
     private let refreshInterval: TimeInterval = 300 // 5 min
 
     // MARK: - Initialization
 
-    public init() {
+    public init(session: GitHubSession) {
+        self.session = session
         loadFromStorage()
     }
 
@@ -40,20 +39,16 @@ public class SearchService {
         autoRefreshTask?.cancel()
     }
 
-    public func configure(token: String) {
-        graphqlClient = GitHubGraphQLClient(token: token)
+    public func configure() {
         startAutoRefresh()
     }
 
     public func clearToken() {
         stopAutoRefresh()
-        graphqlClient = nil
         items = []
         repositoryItems = []
         resultsBySearchId = [:]
         repositoryResultsBySearchId = [:]
-        previousItemIds = []
-        previousRepositoryIds = []
         errorMessage = nil
     }
 
@@ -116,17 +111,13 @@ public class SearchService {
 
     // MARK: - Fetching
 
-    public func fetchAll(isAutoRefresh: Bool = false) async {
-        guard let graphqlClient else {
-            if !isAutoRefresh {
-                errorMessage = "Not authenticated"
-            }
+    public func fetchAll() async {
+        guard let graphqlClient = session.graphqlClient else {
+            errorMessage = "Not authenticated"
             return
         }
 
-        if !isAutoRefresh {
-            isLoading = true
-        }
+        isLoading = true
         errorMessage = nil
 
         let enabledSearches = savedSearches.filter(\.isEnabled)
@@ -138,9 +129,7 @@ public class SearchService {
                 let results = try await graphqlClient.search(query: search.query, first: 30)
                 resultsBySearchId[search.id] = results
             } catch {
-                if !isAutoRefresh {
-                    print("Error fetching search \(search.name): \(error)")
-                }
+                print("Error fetching search \(search.name): \(error)")
             }
         }
 
@@ -149,26 +138,14 @@ public class SearchService {
                 let results = try await graphqlClient.searchRepositories(query: search.query, first: 30)
                 repositoryResultsBySearchId[search.id] = results
             } catch {
-                if !isAutoRefresh {
-                    print("Error fetching repo search \(search.name): \(error)")
-                }
+                print("Error fetching repo search \(search.name): \(error)")
             }
         }
 
         aggregateResults()
         aggregateRepositoryResults()
 
-        if isAutoRefresh {
-            await detectAndNotifyNewItems()
-            await detectAndNotifyNewRepositories()
-        }
-
-        previousItemIds = Set(items.map(\.id))
-        previousRepositoryIds = Set(repositoryItems.map(\.id))
-
-        if !isAutoRefresh {
-            isLoading = false
-        }
+        isLoading = false
     }
 
     // MARK: - Auto-Refresh
@@ -176,12 +153,12 @@ public class SearchService {
     private func startAutoRefresh() {
         autoRefreshTask?.cancel()
         autoRefreshTask = Task { [weak self] in
-            await self?.fetchAll(isAutoRefresh: false)
+            await self?.fetchAll()
 
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(self?.refreshInterval ?? 300))
                 guard !Task.isCancelled else { break }
-                await self?.fetchAll(isAutoRefresh: true)
+                await self?.fetchAll()
             }
         }
     }
@@ -191,34 +168,8 @@ public class SearchService {
         autoRefreshTask = nil
     }
 
-    // MARK: - Diff Detection & Notification
-
-    private func detectAndNotifyNewItems() async {
-        guard !previousItemIds.isEmpty else { return }
-
-        let currentIds = Set(items.map(\.id))
-        let newIds = currentIds.subtracting(previousItemIds)
-        let newItems = items.filter { newIds.contains($0.id) }
-
-        for item in newItems.prefix(5) {
-            await NotificationManager.shared.sendSearchResultNotification(for: item)
-        }
-    }
-
-    private func detectAndNotifyNewRepositories() async {
-        guard !previousRepositoryIds.isEmpty else { return }
-
-        let currentIds = Set(repositoryItems.map(\.id))
-        let newIds = currentIds.subtracting(previousRepositoryIds)
-        let newRepos = repositoryItems.filter { newIds.contains($0.id) }
-
-        for repo in newRepos.prefix(5) {
-            await NotificationManager.shared.sendRepositoryNotification(for: repo)
-        }
-    }
-
     public func fetchPreview(query: String) async -> [SearchResultItem] {
-        guard let graphqlClient else {
+        guard let graphqlClient = session.graphqlClient else {
             return []
         }
 
@@ -231,7 +182,7 @@ public class SearchService {
     }
 
     public func fetchRepositoryPreview(query: String) async -> [RepositorySearchItem] {
-        guard let graphqlClient else {
+        guard let graphqlClient = session.graphqlClient else {
             return []
         }
 

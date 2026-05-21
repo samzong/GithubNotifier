@@ -10,6 +10,7 @@ struct GeneralTab: View {
     @AppStorage(UserPreferences.menubarShowNotificationsTabKey) private var showNotificationsTab = true
     @AppStorage(UserPreferences.menubarShowActivityTabKey) private var showActivityTab = true
     @AppStorage(UserPreferences.menubarShowSearchTabKey) private var showSearchTab = true
+    @AppStorage(UserPreferences.menubarShowWatchingTabKey) private var showWatchingTab = true
     @AppStorage("enableSystemNotifications") private var enableSystemNotifications = false
 
     @State private var isTestingNotification = false
@@ -24,7 +25,7 @@ struct GeneralTab: View {
     ]
 
     private var enabledMainTabCount: Int {
-        [showNotificationsTab, showActivityTab, showSearchTab].count(where: { $0 })
+        [showNotificationsTab, showActivityTab, showSearchTab, showWatchingTab].count(where: { $0 })
     }
 
     var body: some View {
@@ -86,6 +87,9 @@ struct GeneralTab: View {
                 Toggle("settings.menubar.tabs.search".localized, isOn: $showSearchTab)
                     .disabled(showSearchTab && enabledMainTabCount == 1)
 
+                Toggle("settings.menubar.tabs.watching".localized, isOn: $showWatchingTab)
+                    .disabled(showWatchingTab && enabledMainTabCount == 1)
+
                 Text("settings.menubar.tabs.description".localized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -139,7 +143,7 @@ struct GeneralTab: View {
     }
 
     private func normalizeMainTabVisibilityIfNeeded() {
-        if !showNotificationsTab, !showActivityTab, !showSearchTab {
+        if !showNotificationsTab, !showActivityTab, !showSearchTab, !showWatchingTab {
             showNotificationsTab = true
         }
     }

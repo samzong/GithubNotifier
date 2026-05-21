@@ -10,6 +10,7 @@ public struct UserPreferences {
     public static let menubarShowNotificationsTabKey = "menubar.showNotificationsTab"
     public static let menubarShowActivityTabKey = "menubar.showActivityTab"
     public static let menubarShowSearchTabKey = "menubar.showSearchTab"
+    public static let menubarShowWatchingTabKey = "menubar.showWatchingTab"
 
     public init() {}
 }

@@ -557,5 +557,5 @@ private struct RepositoryPreviewRow: View {
 
 #Preview {
     SearchWindowView()
-        .environment(SearchService())
+        .environment(SearchService(session: GitHubSession()))
 }

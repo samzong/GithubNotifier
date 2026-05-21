@@ -9,6 +9,7 @@ import Foundation
 /// New window types can be added here to extend functionality.
 public enum WindowIdentifier: String, CaseIterable, Identifiable, Sendable {
     case searchManagement
+    case monitorManagement
 
     public var id: String { rawValue }
 
@@ -16,6 +17,8 @@ public enum WindowIdentifier: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .searchManagement:
             "Manage Saved Searches"
+        case .monitorManagement:
+            "Manage Monitors"
         }
     }
 
@@ -23,6 +26,8 @@ public enum WindowIdentifier: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .searchManagement:
             (720, 520)
+        case .monitorManagement:
+            (760, 560)
         }
     }
 }
